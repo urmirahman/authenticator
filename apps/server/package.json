@@ -1,0 +1,17 @@
+{
+  "name": "@authenticator/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Go API. These scripts just wrap go commands so turbo can run them.",
+  "scripts": {
+    "dev": "go run github.com/air-verse/air@latest -c .air.toml",
+    "build": "go build -o bin/api ./cmd/api",
+    "start": "./bin/api",
+    "lint": "go vet ./... && (command -v golangci-lint >/dev/null && golangci-lint run || echo 'golangci-lint not installed, ran go vet only')",
+    "check-types": "go build ./...",
+    "test": "go test ./...",
+    "migrate": "go run ./cmd/migrate up",
+    "migrate:down": "go run ./cmd/migrate down",
+    "generate": "sqlc generate"
+  }
+}

@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-authenticator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-authenticator}
+      POSTGRES_DB: ${POSTGRES_DB:-authenticator}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-authenticator}']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Optional: run the Go API in a container (normally you run it with `pnpm server`).
+  server:
+    profiles: ['full']
+    build: ./apps/server
+    env_file: ./apps/server/.env.example
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-authenticator}:${POSTGRES_PASSWORD:-authenticator}@postgres:5432/${POSTGRES_DB:-authenticator}?sslmode=disable
+    ports:
+      - '8080:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

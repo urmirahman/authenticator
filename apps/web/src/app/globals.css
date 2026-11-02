@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+/* Let Tailwind see class names used inside the shared UI package. */
+@source '../../../../packages/ui/src';
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}

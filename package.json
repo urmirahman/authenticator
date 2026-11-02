@@ -1,0 +1,43 @@
+{
+  "name": "authenticator",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "check-types": "turbo run check-types",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md,yml,yaml}\"",
+    "prepare": "husky",
+    "server": "pnpm -F @authenticator/server dev",
+    "web": "pnpm -F @authenticator/web dev",
+    "mobile": "pnpm -F @authenticator/mobile start",
+    "ios": "pnpm -F @authenticator/mobile ios",
+    "android": "pnpm -F @authenticator/mobile android",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm -F @authenticator/server migrate",
+    "db:generate": "pnpm -F @authenticator/server generate",
+    "cz": "git add -A && git cz",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules .turbo apps/*/.next apps/*/.expo packages/*/dist apps/server/bin apps/server/tmp"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.7.4",
+    "turbo": "^2.11.10",
+    "typescript": "5.9.3"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "packageManager": "pnpm@11.5.0",
+  "engines": {
+    "node": ">=22.13"
+  }
+}

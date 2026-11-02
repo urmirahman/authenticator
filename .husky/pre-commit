@@ -1,0 +1,4 @@
+pnpm exec prettier --check $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|mjs|json|md)$' | grep -v pnpm-lock) 2>/dev/null || {
+  echo "Prettier found unformatted files. Run: pnpm format" >&2
+  exit 1
+}

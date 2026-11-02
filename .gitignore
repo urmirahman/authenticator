@@ -1,0 +1,27 @@
+node_modules
+.pnpm-store
+.turbo
+.DS_Store
+._*
+*.log
+coverage
+dist
+.next
+out
+# env (keep the examples)
+.env
+.env.*
+!.env.example
+# expo
+.expo
+apps/mobile/ios
+apps/mobile/android
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+# go
+apps/server/bin
+apps/server/tmp
+*.test
+*.out

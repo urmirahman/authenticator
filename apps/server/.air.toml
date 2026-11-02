@@ -1,0 +1,16 @@
+# Hot reload: rebuilds and restarts the API when .go files change.
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/api ./cmd/api"
+entrypoint = ["./tmp/api"]
+include_ext = ["go", "sql"]
+exclude_dir = ["tmp", "bin", "node_modules"]
+delay = 300
+
+[log]
+time = false
+
+[misc]
+clean_on_exit = true
