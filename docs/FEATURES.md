@@ -71,14 +71,19 @@ Google Authenticator parity plus extras. **Phase** = when it ships. **Status**: 
 
 ## Mobile app status (apps/mobile)
 
-| Feature                                                         | Status                                     |
-| --------------------------------------------------------------- | ------------------------------------------ |
-| Dev login, session in SecureStore                               | ✅                                         |
-| Apple / Google / Facebook native sign-in                        | ⬜ placeholders (need provider app IDs)    |
-| Master password setup + unlock                                  | ✅ (new mobile vaults use 19 MiB Argon2id) |
-| Code list, countdown, search, copy + clipboard clear, HOTP Next | ✅                                         |
-| Add via camera QR (incl. Google export QR) and manual key       | ✅                                         |
-| Sync (pull-to-refresh + every 30 s)                             | ✅                                         |
-| Biometric app lock, screenshot block, app-switcher cover        | ✅                                         |
-| Backups, devices, activity, change password, transfer on mobile | ⬜ (web has them)                          |
-| Passkeys on mobile                                              | ⬜                                         |
+| Feature                                                                               | Status                                     |
+| ------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Dev login, session in SecureStore                                                     | ✅                                         |
+| Apple / Google / Facebook native sign-in                                              | ⬜ placeholders (need provider app IDs)    |
+| Master password setup + unlock                                                        | ✅ (new mobile vaults use 19 MiB Argon2id) |
+| Biometric unlock (opt-in, ADR 32)                                                     | ✅                                         |
+| Code list, countdown, search, copy + clipboard clear, HOTP Next, issuer colors        | ✅                                         |
+| Folders: create, rename, delete (keeps accounts), assign, filter                      | ✅                                         |
+| Add via camera QR (incl. Google export QR) and manual key; edit / delete              | ✅                                         |
+| Sync (pull-to-refresh + every 30 s)                                                   | ✅                                         |
+| Encrypted backups: create, list, delete, restore (skip duplicates)                    | ✅ (same format as web)                    |
+| Devices (remote sign-out), activity log with load more                                | ✅                                         |
+| Settings: change master password, auto-lock, clipboard clear, theme, download my data | ✅                                         |
+| Transfer QR (select, warning, reveal, hide on background)                             | ✅                                         |
+| Screenshot block, app-switcher cover, biometric re-open                               | ✅                                         |
+| Passkeys on mobile                                                                    | ⬜                                         |

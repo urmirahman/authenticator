@@ -32,3 +32,10 @@
 29. **Encrypted backups are opaque blobs.** Server stores ciphertext + public KDF params (≤ 5 MiB, ≤ 20 per user). Downloads are audited.
 30. **Issuer icons are a curated, bundled map** (issuer → Simple Icons slug + brand color, initials fallback). No favicon scraping: it would leak which services you use.
 31. **"Download my data"** (`GET /users/me/export`) for transparency/GDPR; queries run in parallel with `errgroup`.
+
+32. **Optional biometric unlock on mobile stores the raw vault key in the Keychain / Keystore.**
+    - _How:_ `expo-secure-store` with `requireAuthentication: true` and `WHEN_PASSCODE_SET_THIS_DEVICE_ONLY`. The OS releases the key only after Face ID / fingerprint; it is excluded from backups and never leaves the device. Adding/removing a fingerprint or face invalidates it.
+    - _Trade-off:_ convenience vs. a second way in. Anyone who passes the phone's biometrics (or, on some Android devices, a weaker class of biometric) can open the vault without the master password, and the key's safety now depends on the phone's secure hardware, not only on Argon2id. A stolen, unlocked-biometrics phone is the main risk.
+    - _Mitigations:_ off by default, explicit opt-in toggle with an explanation; cleared on sign-out and on master password change (re-opt-in knowingly); if reading fails we fall back to the master password and delete the copy. Master password is still required on first setup and can always be used.
+    - _Rejected:_ storing the master password itself (worse: it also unlocks other devices and backups if reused).
+33. **App preferences, activity labels and folder filtering live in `@repo/vault`** so web and mobile behave the same; each platform only decides where to store preferences (localStorage vs SecureStore).
