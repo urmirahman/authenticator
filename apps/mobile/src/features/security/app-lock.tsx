@@ -2,10 +2,8 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { usePreventScreenCapture } from 'expo-screen-capture';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
+import { usePreferences } from '@/features/settings/preferences';
 import { useVault } from '@/features/vault/vault-store';
-
-/** After this long in the background, forget the vault key (master password needed again). */
-const HARD_LOCK_MS = 5 * 60_000;
 
 /**
  * Three protections:
@@ -13,11 +11,13 @@ const HARD_LOCK_MS = 5 * 60_000;
  * 2. App-switcher privacy: when the app goes inactive we cover it, so the codes don't show in the
  *    task switcher thumbnail.
  * 3. Biometric app lock: coming back from the background asks for Face ID / fingerprint. If the app
- *    stayed away longer than HARD_LOCK_MS, the vault is fully locked instead.
+ *    stayed away longer than the auto-lock setting, the vault is fully locked instead.
  */
 export function AppLock({ children }: { children: ReactNode }) {
   usePreventScreenCapture();
   const vault = useVault();
+  // After this long in the background, forget the vault key (0 = never).
+  const { autoLockMinutes } = usePreferences();
   const [covered, setCovered] = useState(false);
   const [needsBiometric, setNeedsBiometric] = useState(false);
   const leftAt = useRef<number | null>(null);
@@ -33,11 +33,11 @@ export function AppLock({ children }: { children: ReactNode }) {
       const away = leftAt.current ? Date.now() - leftAt.current : 0;
       leftAt.current = null;
       if (vault.status !== 'unlocked') return;
-      if (away > HARD_LOCK_MS) vault.lock();
+      if (autoLockMinutes > 0 && away > autoLockMinutes * 60_000) vault.lock();
       else if (away > 2000) setNeedsBiometric(true);
     });
     return () => sub.remove();
-  }, [vault]);
+  }, [vault, autoLockMinutes]);
 
   const authenticate = async () => {
     const hasHardware = await LocalAuthentication.hasHardwareAsync();

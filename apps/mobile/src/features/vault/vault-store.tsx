@@ -5,6 +5,8 @@ import {
   decryptItem,
   encryptItem,
   unlockEnvelope,
+  wrapVaultKey,
+  sortFolders,
   type AccountData,
   type Decrypted,
   type FolderData,
@@ -20,6 +22,13 @@ import {
   type ReactNode,
 } from 'react';
 import { api } from '@/lib/api';
+import {
+  biometricsAvailable,
+  clearBiometricKey,
+  isBiometricEnabled,
+  loadBiometricKey,
+  saveBiometricKey,
+} from '@/features/security/biometric-key';
 
 /**
  * Mobile version of the web vault store. The crypto is shared (@repo/vault); only state handling
@@ -43,6 +52,10 @@ interface VaultState {
   setup(password: string): Promise<void>;
   unlock(password: string): Promise<void>;
   lock(): void;
+  changePassword(current: string, next: string): Promise<void>;
+  biometric: { available: boolean; enabled: boolean };
+  setBiometric(enabled: boolean): Promise<void>;
+  unlockWithBiometric(): Promise<boolean>;
   sync(): Promise<void>;
   save(kind: VaultItemKind, data: ItemData, id?: string): Promise<string>;
   remove(id: string): Promise<void>;
@@ -64,6 +77,15 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const vault = useRef<Vault | null>(null);
   const key = useRef<Uint8Array | null>(null);
   const cursor = useRef('');
+  const [biometric, setBiometricState] = useState({ available: false, enabled: false });
+
+  const refreshBiometric = useCallback(async () => {
+    const v = vault.current;
+    setBiometricState({
+      available: await biometricsAvailable(),
+      enabled: v ? await isBiometricEnabled(v.id) : false,
+    });
+  }, []);
 
   const apply = useCallback((incoming: EncryptedVaultItem[]) => {
     const k = key.current;
@@ -93,7 +115,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     const vaults = await api.vaults.list();
     vault.current = vaults[0] ?? null;
     setStatus(vault.current ? (key.current ? 'unlocked' : 'locked') : 'needs-setup');
-  }, []);
+    await refreshBiometric();
+  }, [refreshBiometric]);
 
   const sync = useCallback(async () => {
     const v = vault.current;
@@ -126,16 +149,68 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     setStatus('unlocked');
   }, []);
 
-  const unlock = useCallback(
-    async (password: string) => {
-      if (!vault.current) throw new Error('No vault');
-      key.current = await unlockEnvelope(password, vault.current);
+  /** Shared tail of every unlock path: key in memory, fresh state, pull everything. */
+  const afterUnlock = useCallback(
+    async (k: Uint8Array) => {
+      key.current = k;
       cursor.current = '';
       setItems(new Map());
       setStatus('unlocked');
       await sync();
     },
     [sync],
+  );
+
+  const unlockWithBiometric = useCallback(async () => {
+    const v = vault.current;
+    if (!v) return false;
+    const k = await loadBiometricKey(v.id);
+    if (!k) return false;
+    try {
+      // Double-check the stored key still opens the vault (e.g. password changed on another device
+      // keeps the same key, so this normally succeeds).
+      await afterUnlock(k);
+      return true;
+    } catch {
+      await clearBiometricKey();
+      return false;
+    }
+  }, [afterUnlock]);
+
+  const setBiometric = useCallback(
+    async (enabled: boolean) => {
+      const v = vault.current;
+      if (!v || !key.current) throw new Error('Unlock first');
+      if (enabled) await saveBiometricKey(v.id, key.current);
+      else await clearBiometricKey();
+      await refreshBiometric();
+    },
+    [refreshBiometric],
+  );
+
+  /** Same vault key, new password envelope. Biometric copy is cleared so you re-opt-in knowingly. */
+  const changePassword = useCallback(
+    async (current: string, next: string) => {
+      const v = vault.current;
+      if (!v) throw new Error('No vault');
+      const k = await unlockEnvelope(current, v);
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      vault.current = await api.vaults.rekey(
+        v.id,
+        await wrapVaultKey(k, next, { algorithm: 'argon2id', salt, ...MOBILE_KDF }),
+      );
+      await clearBiometricKey();
+      await refreshBiometric();
+    },
+    [refreshBiometric],
+  );
+
+  const unlock = useCallback(
+    async (password: string) => {
+      if (!vault.current) throw new Error('No vault');
+      await afterUnlock(await unlockEnvelope(password, vault.current));
+    },
+    [afterUnlock],
   );
 
   const lock = useCallback(() => {
@@ -196,16 +271,36 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       accounts: (all.filter((i) => i.kind === 'account') as Decrypted<AccountData>[]).sort((a, b) =>
         (a.data.issuer || a.data.label).localeCompare(b.data.issuer || b.data.label),
       ),
-      folders: all.filter((i) => i.kind === 'folder') as Decrypted<FolderData>[],
+      folders: sortFolders(all.filter((i) => i.kind === 'folder') as Decrypted<FolderData>[]),
       load,
       setup,
       unlock,
       lock,
+      changePassword,
+      biometric,
+      setBiometric,
+      unlockWithBiometric,
       sync,
       save,
       remove,
     };
-  }, [items, status, syncing, error, load, setup, unlock, lock, sync, save, remove]);
+  }, [
+    items,
+    status,
+    syncing,
+    error,
+    load,
+    setup,
+    unlock,
+    lock,
+    changePassword,
+    biometric,
+    setBiometric,
+    unlockWithBiometric,
+    sync,
+    save,
+    remove,
+  ]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

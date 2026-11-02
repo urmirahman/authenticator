@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Input, Label, styles as ui } from '@/components/ui';
+import { FolderPicker } from './folder-picker';
 import { useVault } from './vault-store';
 
 /**
@@ -20,7 +21,12 @@ export function AddAccountScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const scanned = useRef(false); // the camera fires many events per second; handle only the first
-  const [form, setForm] = useState({ issuer: '', label: '', secret: '' });
+  const [form, setForm] = useState<{
+    issuer: string;
+    label: string;
+    secret: string;
+    folderId?: string;
+  }>({ issuer: '', label: '', secret: '' });
 
   const onScan = (data: string) => {
     if (scanned.current) return;
@@ -40,7 +46,7 @@ export function AddAccountScreen() {
     setBusy(true);
     setError(null);
     try {
-      for (const a of accounts) await vault.save('account', toAccountData(a));
+      for (const a of accounts) await vault.save('account', toAccountData(a, form.folderId));
       router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed');
@@ -133,6 +139,10 @@ export function AddAccountScreen() {
           />
           <Label>Secret key</Label>
           <Input value={form.secret} onChangeText={(secret) => setForm({ ...form, secret })} />
+          <FolderPicker
+            value={form.folderId}
+            onChange={(folderId) => setForm({ ...form, folderId })}
+          />
           <Button title={busy ? 'Saving…' : 'Add account'} onPress={saveManual} disabled={busy} />
         </ScrollView>
       )}

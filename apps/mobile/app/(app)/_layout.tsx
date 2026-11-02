@@ -32,6 +32,14 @@ export default function AppLayout() {
       <Stack.Screen name="codes" options={{ title: 'Codes' }} />
       <Stack.Screen name="add-account" options={{ title: 'Add account', presentation: 'modal' }} />
       <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+      <Stack.Screen
+        name="edit-account"
+        options={{ title: 'Edit account', presentation: 'modal' }}
+      />
+      <Stack.Screen name="backups" options={{ title: 'Backups' }} />
+      <Stack.Screen name="transfer" options={{ title: 'Transfer' }} />
+      <Stack.Screen name="devices" options={{ title: 'Devices' }} />
+      <Stack.Screen name="activity" options={{ title: 'Activity' }} />
     </Stack>
   );
 }
