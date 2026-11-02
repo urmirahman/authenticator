@@ -256,17 +256,15 @@ paths:
       tags: [users]
       summary: Download all your data as JSON (vault items and backups stay encrypted)
       responses:
-        '200':
-          {
-            description: JSON attachment with user,
-            identities,
-            devices,
-            passkeys,
-            vaults,
-            vaultItems,
-            backups,
-            activity,
-          }
+        '200': { description: 'JSON attachment with user,
+              identities,
+              devices,
+              passkeys,
+              vaults,
+              vaultItems,
+              backups,
+              activity,
+              ' }
 
   /backups:
     get:
@@ -296,13 +294,7 @@ paths:
                 name: { type: string, maxLength: 100 }
                 ciphertext: { type: string, format: byte }
                 nonce: { type: string, format: byte, description: 24 bytes }
-                kdf:
-                  {
-                    type: object,
-                    description: Public params to re-derive the backup key (salt,
-                    memory,
-                    ...),
-                  }
+                kdf: { type: object, description: 'Public params to re-derive the backup key' }
                 itemCount: { type: integer }
       responses:
         '201':

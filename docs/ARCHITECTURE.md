@@ -167,3 +167,11 @@ dynamic truncation (RFC 4226), N digits. Unit tests check the official RFC 6238 
 `packages/ui` is web-only (DOM + Tailwind). Mobile shares **logic** (`crypto`, `api-client`, `types`)
 and keeps its own React Native components under `apps/mobile/src/features/*`. If shared visuals are
 wanted later, add `packages/ui-native` or adopt a cross-platform kit (e.g. Tamagui, NativeWind).
+
+## Import, export and backups (phase 4)
+
+- **Import** happens on the device: `@repo/importers` turns `otpauth://` links, Google `otpauth-migration://` QR links, 2FAS JSON and Aegis JSON into one `ImportedAccount` shape; the app encrypts each and pushes via sync. Encrypted 2FAS/Aegis exports are refused with a clear message.
+- **Transfer**: `toGoogleMigration()` builds Google-compatible QR link batches.
+- **Encrypted backup**: client encrypts with a backup-password key (Argon2id + XChaCha20-Poly1305) and uploads ciphertext to `POST /v1/backups`.
+- **Download my data**: `GET /v1/users/me/export` (ciphertext stays ciphertext).
+- **Issuer icons**: `issuerIcon("GitHub")` → `{ slug, color }`, bundled, no network.

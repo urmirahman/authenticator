@@ -13,6 +13,7 @@ PostgreSQL 16. Schema lives in `apps/server/migrations` (goose). Queries live in
 | `vaults`              | Vault header                         | `kdf_*` params + `kdf_salt`, `wrapped_key` (encrypted vault key)                                 |
 | `vault_items`         | Encrypted TOTP accounts              | `ciphertext`, `nonce`, `version`, `deleted` (tombstone)                                          |
 | `sync_changes`        | Append-only change log               | `seq` (BIGSERIAL = sync cursor), `vault_id`, `item_id`, `version`, `device_id`                   |
+| `backups`             | Encrypted backup files               | `ciphertext` (≤ 5 MiB), `nonce`, `kdf` JSONB, `item_count`, `size_bytes`                         |
 | `audit_log`           | Security events                      | `action` (e.g. `login`, `passkey.added`), `ip`, `user_agent`, `metadata` JSONB                   |
 
 ```mermaid
@@ -43,5 +44,6 @@ Notes:
 | `00002_auth_phase1.sql`           | `identities.email_verified`, `oauth_states`, `login_codes`, `sessions(device_id)` index |
 | `00003_vault_phase2.sql`          | `vault_items.kind` (account/folder), `vault_items.updated_by_device`                    |
 | `00004_passkeys_audit_phase3.sql` | `passkey_credentials.credential`, `webauthn_challenges`                                 |
+| `00005_backups_phase4.sql`        | `backups`                                                                               |
 
 Every schema change is a new numbered goose file — never edit one that has already run.

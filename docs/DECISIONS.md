@@ -27,3 +27,8 @@
 25. **`go-chi/httprate` per-IP rate limiting** in-process. Fine for one instance; move to Redis-backed limits when running several.
 26. **`DEV_AUTH` dev-only token minting**, refused when `APP_ENV=production`, to test protected routes with curl without OAuth apps.
 27. **Software authenticator in tests** (`internal/app/softauthn_test.go`) to exercise the real passkey ceremonies end to end without a browser.
+
+28. **Importers run on the client** (`packages/importers`): Google Authenticator migration (small hand-written protobuf reader), 2FAS, Aegis, otpauth lists. Secrets never reach the server in plaintext, so the server can't do imports.
+29. **Encrypted backups are opaque blobs.** Server stores ciphertext + public KDF params (≤ 5 MiB, ≤ 20 per user). Downloads are audited.
+30. **Issuer icons are a curated, bundled map** (issuer → Simple Icons slug + brand color, initials fallback). No favicon scraping: it would leak which services you use.
+31. **"Download my data"** (`GET /users/me/export`) for transparency/GDPR; queries run in parallel with `errgroup`.
