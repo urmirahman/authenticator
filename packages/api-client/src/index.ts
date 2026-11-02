@@ -151,6 +151,11 @@ export function createApiClient({
       }) => request<BackupMeta>('POST', '/backups', b),
       remove: (id: string) => request<void>('DELETE', `/backups/${id}`),
     },
+    /** Only exists when the server runs with DEV_AUTH=true (local development). */
+    dev: {
+      token: (email: string, name = '') =>
+        request<AuthTokens>('POST', '/dev/token', { email, name }),
+    },
     activity: {
       list: (before?: string, limit = 50) =>
         request<ActivityPage>(

@@ -1,15 +1,46 @@
-import { api } from '@/lib/api';
+import { api, completeSignIn } from '@/lib/api';
+import {
+  credentialToJSON,
+  parseCreationOptions,
+  parseRequestOptions,
+  type CredentialLike,
+} from '@/lib/webauthn-json';
 
 /**
- * Passkey (WebAuthn) sign-in:
- * 1. ask the server for a challenge, 2. navigator.credentials.get(options.publicKey), 3. send the assertion back.
- * TODO: the server sends base64url JSON; convert with PublicKeyCredential.parseRequestOptionsFromJSON
- * (or @simplewebauthn/browser) and serialize the result with credential.toJSON() before sending.
+ * Passkeys (WebAuthn), step by step:
+ * 1. the server creates a random challenge and sends options (base64url JSON),
+ * 2. we convert them to ArrayBuffers and ask the browser / phone / security key to sign,
+ * 3. we convert the answer back to JSON and the server verifies the signature.
  */
+
+type Json = Record<string, unknown>;
+
+export const passkeysSupported = () =>
+  typeof window !== 'undefined' && typeof window.PublicKeyCredential !== 'undefined';
+
 export async function signInWithPasskey() {
   const { challengeId, options } = await api.passkeys.beginLogin();
   const credential = await navigator.credentials.get({
-    publicKey: options.publicKey as unknown as PublicKeyCredentialRequestOptions,
+    publicKey: parseRequestOptions(options.publicKey as Json),
   });
-  return api.passkeys.finishLogin(challengeId, credential);
+  if (!credential) throw new Error('No passkey was selected');
+  const tokens = await api.passkeys.finishLogin(
+    challengeId,
+    credentialToJSON(credential as unknown as CredentialLike),
+  );
+  await completeSignIn(tokens);
+}
+
+/** Add a passkey to the signed-in account (Settings page). */
+export async function registerPasskey(name: string) {
+  const { challengeId, options } = await api.passkeys.beginRegister();
+  const credential = await navigator.credentials.create({
+    publicKey: parseCreationOptions(options.publicKey as Json),
+  });
+  if (!credential) throw new Error('Passkey creation was cancelled');
+  return api.passkeys.finishRegister(
+    challengeId,
+    credentialToJSON(credential as unknown as CredentialLike),
+    name,
+  );
 }
