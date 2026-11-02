@@ -68,9 +68,12 @@ export interface Vault {
 }
 
 /** What the server stores and returns: opaque ciphertext plus sync metadata. */
+export type VaultItemKind = 'account' | 'folder';
+
 export interface EncryptedVaultItem {
   id: UUID;
   vaultId: UUID;
+  kind: VaultItemKind;
   ciphertext: string; // base64
   nonce: string; // base64
   version: number;
@@ -87,8 +90,15 @@ export interface SyncPullResponse {
 export interface SyncPushRequest {
   vaultId: UUID;
   deviceId: UUID;
-  changes: Array<Pick<EncryptedVaultItem, 'id' | 'ciphertext' | 'nonce' | 'version' | 'deleted'>>;
+  changes: VaultChange[];
 }
+
+export type VaultChange = Pick<
+  EncryptedVaultItem,
+  'id' | 'ciphertext' | 'nonce' | 'version' | 'deleted'
+> & {
+  kind?: VaultItemKind;
+};
 
 export interface SyncPushResponse {
   accepted: UUID[];
@@ -99,4 +109,43 @@ export interface SyncPushResponse {
 
 export interface ApiError {
   error: { code: string; message: string };
+}
+
+/** Body for POST /auth/oauth/{provider}/token (mobile native SDKs). */
+export interface NativeSignInRequest {
+  idToken?: string;
+  nonce?: string;
+  authorizationCode?: string;
+  codeVerifier?: string;
+  redirectUri?: string;
+  accessToken?: string;
+  name?: string;
+}
+
+export interface Passkey {
+  id: UUID;
+  name: string;
+  backupEligible: boolean;
+  createdAt: ISODate;
+  lastUsedAt?: ISODate;
+}
+
+export interface PasskeyBegin {
+  challengeId: UUID;
+  /** Pass options.publicKey to navigator.credentials.create()/get(). */
+  options: { publicKey: unknown };
+}
+
+export interface ActivityEvent {
+  id: number;
+  action: string;
+  ip?: string;
+  userAgent?: string;
+  metadata: Record<string, unknown>;
+  createdAt: ISODate;
+}
+
+export interface ActivityPage {
+  events: ActivityEvent[];
+  next?: string;
 }
