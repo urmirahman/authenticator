@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createEnvelope, decryptItem, encryptItem, unlockEnvelope } from './vault-codec';
+import {
+  createEnvelope,
+  decryptItem,
+  encryptItem,
+  unlockEnvelope,
+  wrapVaultKey,
+} from './vault-codec';
 
 // Small Argon2 settings so tests are fast. Real setup uses defaultKdfParams() (64 MiB).
 const params = () => ({
@@ -24,5 +30,12 @@ describe('vault codec', () => {
     expect(decryptItem(vaultKey, { id: 'id-1', ...enc })).toEqual(data);
     // Same ciphertext under another id must fail: the server can't swap items around.
     expect(() => decryptItem(vaultKey, { id: 'id-2', ...enc })).toThrow();
+  });
+
+  it('re-wraps the same key under a new password', async () => {
+    const { vaultKey } = await createEnvelope('old', params());
+    const next = await wrapVaultKey(vaultKey, 'new', params());
+    expect(await unlockEnvelope('new', next)).toEqual(vaultKey);
+    await expect(unlockEnvelope('old', next)).rejects.toThrow();
   });
 });

@@ -18,6 +18,7 @@ import {
   decryptItem,
   encryptItem,
   unlockEnvelope,
+  wrapVaultKey,
   type AccountData,
   type Decrypted,
   type FolderData,
@@ -43,6 +44,7 @@ interface VaultState {
   setup(password: string): Promise<void>;
   unlock(password: string): Promise<void>;
   lock(): void;
+  changePassword(current: string, next: string): Promise<void>;
   sync(): Promise<void>;
   save(kind: VaultItemKind, data: ItemData, id?: string): Promise<string>;
   remove(id: string): Promise<void>;
@@ -148,6 +150,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     setStatus(vault.current ? 'locked' : 'needs-setup');
   }, []);
 
+  /**
+   * Change master password: prove the old one, then wrap the SAME vault key with the new one.
+   * Items are not re-encrypted. Other devices just need the new password next time they unlock.
+   */
+  const changePassword = useCallback(async (current: string, next: string) => {
+    const v = vault.current;
+    if (!v) throw new Error('No vault');
+    const k = await unlockEnvelope(current, v);
+    vault.current = await api.vaults.rekey(v.id, await wrapVaultKey(k, next, defaultKdfParams()));
+  }, []);
+
   /** Write one item. On a 409 conflict we take the server copy and tell the user to retry. */
   const putItem = useCallback(
     async (id: string, kind: VaultItemKind, data: ItemData | null, version: number) => {
@@ -214,11 +227,26 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       setup,
       unlock,
       lock,
+      changePassword,
       sync,
       save,
       remove,
     };
-  }, [items, status, syncing, lastSyncedAt, error, load, setup, unlock, lock, sync, save, remove]);
+  }, [
+    items,
+    status,
+    syncing,
+    lastSyncedAt,
+    error,
+    load,
+    setup,
+    unlock,
+    lock,
+    changePassword,
+    sync,
+    save,
+    remove,
+  ]);
 
   return <VaultContext.Provider value={value}>{children}</VaultContext.Provider>;
 }

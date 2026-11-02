@@ -1,6 +1,6 @@
 'use client';
 
-import { secondsRemaining, totp } from '@repo/crypto';
+import { base32Decode, hotp, secondsRemaining, totp } from '@repo/crypto';
 import type { TotpAlgorithm } from '@repo/types';
 import { useEffect, useState } from 'react';
 
@@ -46,4 +46,13 @@ export function useTotp(account: TotpInput) {
     /* invalid secret: keep dashes */
   }
   return { code, remaining: secondsRemaining(account.period, now) };
+}
+
+/** HOTP: the code only changes when you ask for the next one (counter + 1). */
+export function hotpCode(a: TotpInput & { counter?: number }) {
+  try {
+    return hotp(base32Decode(a.secret), a.counter ?? 0, a.digits, a.algorithm);
+  } catch {
+    return '-'.repeat(a.digits);
+  }
 }

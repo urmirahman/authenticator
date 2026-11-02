@@ -41,7 +41,7 @@ export interface Decrypted<T> {
 /** Associated data that binds the wrapped key to its purpose (can't be swapped for an item). */
 const WRAP_AD = 'vault-key';
 
-type VaultEnvelope = Pick<Vault, 'kdf' | 'wrappedKey'>;
+export type VaultEnvelope = Pick<Vault, 'kdf' | 'wrappedKey'>;
 
 /** First-time setup: random vault key, wrapped with a key derived from the master password. */
 export async function createEnvelope(
@@ -49,22 +49,32 @@ export async function createEnvelope(
   params: KdfParams,
   crypto: VaultCrypto = nobleVaultCrypto,
 ): Promise<{ envelope: VaultEnvelope; vaultKey: Uint8Array }> {
-  const kek = await crypto.deriveKey(password, params);
   const vaultKey = crypto.generateKey();
+  return { vaultKey, envelope: await wrapVaultKey(vaultKey, password, params, crypto) };
+}
+
+/**
+ * Wrap an existing vault key with a (new) password. Used by setup and by "change master password":
+ * the items stay encrypted with the same vault key, only this small envelope changes.
+ */
+export async function wrapVaultKey(
+  vaultKey: Uint8Array,
+  password: string,
+  params: KdfParams,
+  crypto: VaultCrypto = nobleVaultCrypto,
+): Promise<VaultEnvelope> {
+  const kek = await crypto.deriveKey(password, params);
   const sealed = crypto.seal(kek, vaultKey, new TextEncoder().encode(WRAP_AD));
   return {
-    vaultKey,
-    envelope: {
-      kdf: {
-        algorithm: 'argon2id',
-        salt: toBase64(params.salt),
-        memoryKiB: params.memoryKiB,
-        iterations: params.iterations,
-        parallelism: params.parallelism,
-      },
-      // nonce (24 bytes) + ciphertext in one blob, so the server needs only one field.
-      wrappedKey: toBase64(concat(sealed.nonce, sealed.ciphertext)),
+    kdf: {
+      algorithm: 'argon2id',
+      salt: toBase64(params.salt),
+      memoryKiB: params.memoryKiB,
+      iterations: params.iterations,
+      parallelism: params.parallelism,
     },
+    // nonce (24 bytes) + ciphertext in one blob, so the server needs only one field.
+    wrappedKey: toBase64(concat(sealed.nonce, sealed.ciphertext)),
   };
 }
 
@@ -116,7 +126,7 @@ export function decryptItem<T = ItemData>(
   );
 }
 
-function concat(a: Uint8Array, b: Uint8Array) {
+export function concat(a: Uint8Array, b: Uint8Array) {
   const out = new Uint8Array(a.length + b.length);
   out.set(a);
   out.set(b, a.length);

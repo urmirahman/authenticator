@@ -6,7 +6,7 @@ Run: `cp .env.example .env.local`, set `NEXT_PUBLIC_DEV_AUTH=true` for local dev
 
 ```
 src/
-  app/                 routes only (thin): /sign-in, /auth/callback, /vault, /devices, /activity, /settings
+  app/                 routes only (thin): /sign-in, /auth/callback, /vault, /backups, /transfer, /devices, /activity, /settings
   components/          app shell (nav, sign-in guard, unlock gate) and small UI helpers
   lib/                 api client with auto token refresh, base64, WebAuthn JSON conversion
   features/
@@ -15,7 +15,9 @@ src/
     vault/             vault-codec (pure crypto), vault-context (store + sync), unlock screen, main screen
     totp/              live code row, shared 1-second clock, copy + clipboard clear
     add-account/       manual / QR image / paste-import dialog
-    devices/ activity/ settings/
+    backup/            backup-codec (backup password → Argon2id → XChaCha20) + backup screen
+    transfer/          Google-style migration QR codes (warning + reveal)
+    devices/ activity/ settings/   settings also has change master password + passkey rename
 ```
 
 Data flow: master password → Argon2id (browser) → unwraps vault key → decrypts items pulled from `/v1/sync`.

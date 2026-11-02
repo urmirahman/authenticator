@@ -6,7 +6,8 @@ import { useState } from 'react';
 import { useSettings } from '@/features/settings/settings';
 import type { AccountData, Decrypted, FolderData } from '@/features/vault/vault-codec';
 import { copyCode } from './copy';
-import { useTotp } from './use-totp';
+import { useVault } from '@/features/vault/vault-context';
+import { hotpCode, useTotp } from './use-totp';
 
 /** Colored circle with initials. Brand color comes from the bundled issuer map (no network). */
 function IssuerBadge({ issuer }: { issuer: string }) {
@@ -30,7 +31,21 @@ interface RowProps {
 
 function CodeRow({ account, onEdit }: RowProps) {
   const a = account.data;
-  const { code, remaining } = useTotp(a);
+  const isHotp = a.type === 'hotp';
+  const live = useTotp(a);
+  const code = isHotp ? hotpCode(a) : live.code;
+  const vault = useVault();
+  const [advancing, setAdvancing] = useState(false);
+
+  /** HOTP: bump the counter and sync it, so every device shows the same next code. */
+  const nextHotp = async () => {
+    setAdvancing(true);
+    try {
+      await vault.save('account', { ...a, counter: (a.counter ?? 0) + 1 }, account.id);
+    } finally {
+      setAdvancing(false);
+    }
+  };
   const { clipboardClearSeconds } = useSettings();
   const [copied, setCopied] = useState(false);
 
@@ -48,11 +63,22 @@ function CodeRow({ account, onEdit }: RowProps) {
           {a.issuer} {a.label && <span className="text-slate-400">· {a.label}</span>}
         </p>
         <p className="font-mono text-2xl tracking-widest">
-          {a.type === 'hotp' ? 'HOTP (not yet)' : code.replace(/(\d{3})(?=\d)/g, '$1 ')}
+          {code.replace(/(\d{3})(?=\d)/g, '$1 ')}
         </p>
         {copied && <p className="text-xs text-emerald-600">Copied</p>}
       </button>
-      <CountdownRing remaining={remaining} period={a.period} />
+      {isHotp ? (
+        <button
+          className="rounded-lg px-2 py-1 text-xs text-indigo-600 ring-1 ring-indigo-200 disabled:opacity-50"
+          onClick={nextHotp}
+          disabled={advancing}
+          title={`Counter ${a.counter ?? 0}`}
+        >
+          Next
+        </button>
+      ) : (
+        <CountdownRing remaining={live.remaining} period={a.period} />
+      )}
       <button
         className="text-sm text-slate-400 hover:text-slate-700"
         onClick={() => onEdit(account)}

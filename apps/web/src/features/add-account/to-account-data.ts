@@ -15,3 +15,17 @@ export function toAccountData(a: ImportedAccount, folderId?: string): AccountDat
     folderId,
   };
 }
+
+/** The reverse, for backups and transfer QR codes. */
+export function toImported(a: AccountData): ImportedAccount {
+  return {
+    type: a.type ?? 'totp',
+    issuer: a.issuer,
+    label: a.label,
+    secret: a.secret,
+    algorithm: a.algorithm,
+    digits: a.digits,
+    period: a.period,
+    counter: a.counter,
+  };
+}

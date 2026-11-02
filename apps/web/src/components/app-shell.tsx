@@ -11,6 +11,8 @@ import { signOut } from '@/lib/api';
 
 const NAV = [
   { href: '/vault', label: 'Codes' },
+  { href: '/backups', label: 'Backups' },
+  { href: '/transfer', label: 'Transfer' },
   { href: '/devices', label: 'Devices' },
   { href: '/activity', label: 'Activity' },
   { href: '/settings', label: 'Settings' },

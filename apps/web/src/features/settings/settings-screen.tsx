@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Field, inputClass, PageTitle } from '@/components/ui';
 import { passkeysSupported, registerPasskey } from '@/features/auth/passkey';
 import { api } from '@/lib/api';
+import { ChangePasswordForm } from './change-password';
 import { updateSettings, useSettings, type Settings } from './settings';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -103,16 +104,29 @@ export function SettingsScreen() {
         </div>
       </Section>
 
+      <Section title="Master password">
+        <ChangePasswordForm />
+      </Section>
+
       <Section title="Passkeys">
         <ul className="space-y-1 text-sm">
           {passkeys.map((p) => (
-            <li key={p.id} className="flex justify-between">
+            <li key={p.id} className="flex items-center">
               <span>
                 {p.name}{' '}
                 <span className="text-xs text-slate-500">
                   added {new Date(p.createdAt).toLocaleDateString()}
                 </span>
               </span>
+              <button
+                className="ml-auto mr-3 text-indigo-600"
+                onClick={() => {
+                  const name = prompt('Rename passkey', p.name)?.trim();
+                  if (name && name !== p.name) api.passkeys.rename(p.id, name).then(loadPasskeys);
+                }}
+              >
+                Rename
+              </button>
               <button
                 className="text-red-600"
                 onClick={() =>

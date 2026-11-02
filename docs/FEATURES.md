@@ -52,18 +52,19 @@ Google Authenticator parity plus extras. **Phase** = when it ships. **Status**: 
 
 ## Web app status (apps/web)
 
-| Feature                                                | Status                                   |
-| ------------------------------------------------------ | ---------------------------------------- |
-| Sign in: Google / Apple / Facebook, passkey, dev login | ✅ (OAuth needs your provider apps)      |
-| Master password setup + unlock (Argon2id in browser)   | ✅                                       |
-| Live codes, countdown ring, tap to copy, issuer colors | ✅                                       |
-| Add: secret key, QR image upload, paste/import         | ✅ (Google export, 2FAS, Aegis, otpauth) |
-| Edit / delete accounts, folders, search                | ✅                                       |
-| Sync (pull every 30 s + on tab focus, conflict notice) | ✅                                       |
-| Devices (remote sign-out), activity log                | ✅                                       |
-| Settings: auto-lock, clipboard clear, theme, passkeys  | ✅                                       |
-| Download my data                                       | ✅                                       |
-| Encrypted backup upload/restore UI                     | ⬜ (API + api-client ready)              |
-| Change master password (rekey) UI                      | ⬜ (API ready)                           |
-| HOTP codes                                             | ⬜ (imported and stored, not displayed)  |
-| Transfer-to-phone QR display                           | ⬜ (`toGoogleMigration()` ready)         |
+| Feature                                                | Status                                                      |
+| ------------------------------------------------------ | ----------------------------------------------------------- |
+| Sign in: Google / Apple / Facebook, passkey, dev login | ✅ (OAuth needs your provider apps)                         |
+| Master password setup + unlock (Argon2id in browser)   | ✅                                                          |
+| Live codes, countdown ring, tap to copy, issuer colors | ✅                                                          |
+| Add: secret key, QR image upload, paste/import         | ✅ (Google export, 2FAS, Aegis, otpauth)                    |
+| Edit / delete accounts, folders, search                | ✅                                                          |
+| Sync (pull every 30 s + on tab focus, conflict notice) | ✅                                                          |
+| Devices (remote sign-out), activity log                | ✅                                                          |
+| Settings: auto-lock, clipboard clear, theme, passkeys  | ✅                                                          |
+| Download my data                                       | ✅                                                          |
+| Encrypted backup upload/restore UI                     | ✅ (/backups, separate backup password, duplicates skipped) |
+| Change master password (rekey) UI                      | ✅ (Settings, re-wraps the same vault key)                  |
+| HOTP codes                                             | ✅ (tap Next, counter synced)                               |
+| Transfer-to-phone QR display                           | ✅ (/transfer, warning + reveal, auto-hide)                 |
+| Passkey rename                                         | ✅ (Settings)                                               |
