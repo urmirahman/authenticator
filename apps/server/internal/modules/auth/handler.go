@@ -3,46 +3,89 @@ package auth
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/urmirahman/authenticator/apps/server/pkg/httpx"
 )
 
-const stateCookie = "oauth_state"
-
 type Handler struct{ svc *Service }
 
 func NewHandler(svc *Service) *Handler { return &Handler{svc: svc} }
 
-func (h *Handler) start(w http.ResponseWriter, r *http.Request) {
-	url, state, err := h.svc.AuthCodeURL(chi.URLParam(r, "provider"))
-	if errors.Is(err, ErrUnknownProvider) {
+// writeErr maps service errors to HTTP status codes in one place.
+func writeErr(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, ErrUnknownProvider):
 		httpx.Error(w, http.StatusNotFound, "unknown_provider", err.Error())
-		return
+	case errors.Is(err, ErrBadRedirect), errors.Is(err, ErrBadRequest):
+		httpx.Error(w, http.StatusBadRequest, "bad_request", err.Error())
+	case errors.Is(err, ErrEmailTaken):
+		httpx.Error(w, http.StatusConflict, "email_taken", err.Error())
+	case errors.Is(err, ErrInvalidRefresh), errors.Is(err, ErrInvalidCode), errors.Is(err, ErrInvalidState):
+		httpx.Error(w, http.StatusUnauthorized, "unauthorized", err.Error())
+	default:
+		httpx.Error(w, http.StatusUnauthorized, "auth_failed", "sign-in failed")
 	}
+}
+
+func meta(r *http.Request) SessionMeta { return SessionMeta{UserAgent: r.UserAgent()} }
+
+func (h *Handler) start(w http.ResponseWriter, r *http.Request) {
+	url, err := h.svc.Start(r.Context(), chi.URLParam(r, "provider"), r.URL.Query().Get("redirect_uri"))
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "internal", "could not start sign-in")
+		writeErr(w, err)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name: stateCookie, Value: state, Path: "/v1/auth", HttpOnly: true, Secure: r.TLS != nil,
-		// Apple uses form_post (a cross-site POST), which needs SameSite=None in production.
-		SameSite: http.SameSiteLaxMode, Expires: time.Now().Add(10 * time.Minute),
-	})
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-// callback: TODO
-//  1. compare ?state with the cookie
-//  2. exchange the code (Apple: ClientSecret = applesecret.Generate(...))
-//  3. fetch/verify the profile (Google & Apple: verify the id_token; Facebook: GET /me?fields=id,name,email)
-//  4. h.svc.SignIn(...) and redirect to the web app with a one-time code (never tokens in the URL)
-func (h *Handler) callback(w http.ResponseWriter, _ *http.Request) { httpx.NotImplemented(w) }
+// callback handles GET (Google/Facebook) and POST form_post (Apple).
+func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "bad_request", "bad form")
+		return
+	}
+	if e := r.Form.Get("error"); e != "" {
+		httpx.Error(w, http.StatusUnauthorized, "provider_error", e)
+		return
+	}
+	to, err := h.svc.Callback(r.Context(), chi.URLParam(r, "provider"),
+		r.Form.Get("state"), r.Form.Get("code"), r.Form.Get("user"))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	http.Redirect(w, r, to, http.StatusFound)
+}
 
-// idToken is for mobile: native SDKs hand us an id_token we verify against the provider's JWKS. TODO.
-func (h *Handler) idToken(w http.ResponseWriter, _ *http.Request) { httpx.NotImplemented(w) }
+func (h *Handler) exchange(w http.ResponseWriter, r *http.Request) {
+	var req ExchangeRequest
+	if err := httpx.Decode(r, &req); err != nil || req.Code == "" {
+		httpx.Error(w, http.StatusBadRequest, "bad_request", "code is required")
+		return
+	}
+	t, err := h.svc.ExchangeLoginCode(r.Context(), req.Code, meta(r))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, t)
+}
+
+func (h *Handler) native(w http.ResponseWriter, r *http.Request) {
+	var req NativeRequest
+	if err := httpx.Decode(r, &req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	t, err := h.svc.NativeSignIn(r.Context(), chi.URLParam(r, "provider"), req, meta(r))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, t)
+}
 
 func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 	var req RefreshRequest
@@ -50,13 +93,9 @@ func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "bad_request", "refreshToken is required")
 		return
 	}
-	t, err := h.svc.Refresh(r.Context(), req.RefreshToken, SessionMeta{UserAgent: r.UserAgent()})
-	if errors.Is(err, ErrInvalidRefresh) {
-		httpx.Error(w, http.StatusUnauthorized, "invalid_refresh", err.Error())
-		return
-	}
+	t, err := h.svc.Refresh(r.Context(), req.RefreshToken, meta(r))
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "internal", "could not refresh")
+		writeErr(w, err)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, t)

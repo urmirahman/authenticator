@@ -32,7 +32,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	handler, err := app.NewRouter(cfg, log, pool)
+	handler, err := app.NewRouter(ctx, cfg, log, pool)
 	if err != nil {
 		log.Error("router setup failed", "err", err)
 		os.Exit(1)

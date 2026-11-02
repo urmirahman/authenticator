@@ -1,4 +1,4 @@
-// Package middleware holds cross-cutting HTTP concerns: logging and auth.
+// Package middleware holds cross-cutting HTTP concerns: logging, auth, headers, rate limits.
 package middleware
 
 import (
@@ -17,9 +17,9 @@ import (
 
 type ctxKey int
 
-const userIDKey ctxKey = iota
+const subjectKey ctxKey = iota
 
-// Logger logs one line per request with status and latency.
+// Logger logs one line per request with status, latency and request id.
 func Logger(log *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func Logger(log *slog.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-// RequireAuth checks the Bearer access token and stores the user id in the context.
+// RequireAuth checks the Bearer access token and stores the subject in the context.
 func RequireAuth(iss *token.Issuer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,18 +42,29 @@ func RequireAuth(iss *token.Issuer) func(http.Handler) http.Handler {
 				httpx.Error(w, http.StatusUnauthorized, "unauthorized", "missing bearer token")
 				return
 			}
-			uid, err := iss.Verify(raw)
+			subj, err := iss.Verify(raw)
 			if err != nil {
 				httpx.Error(w, http.StatusUnauthorized, "unauthorized", "invalid token")
 				return
 			}
-			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userIDKey, uid)))
+			next.ServeHTTP(w, r.WithContext(WithSubject(r.Context(), subj)))
 		})
 	}
 }
 
+// WithSubject is exported so tests can fake an authenticated request.
+func WithSubject(ctx context.Context, s token.Subject) context.Context {
+	return context.WithValue(ctx, subjectKey, s)
+}
+
 // UserID returns the authenticated user's id (only valid behind RequireAuth).
 func UserID(ctx context.Context) uuid.UUID {
-	id, _ := ctx.Value(userIDKey).(uuid.UUID)
-	return id
+	s, _ := ctx.Value(subjectKey).(token.Subject)
+	return s.UserID
+}
+
+// SessionID returns the refresh-token family of the current access token.
+func SessionID(ctx context.Context) uuid.UUID {
+	s, _ := ctx.Value(subjectKey).(token.Subject)
+	return s.SessionID
 }

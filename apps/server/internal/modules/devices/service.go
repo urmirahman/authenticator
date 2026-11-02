@@ -9,7 +9,11 @@ import (
 	"github.com/urmirahman/authenticator/apps/server/internal/db"
 )
 
-var ErrInvalidPlatform = errors.New("platform must be web, ios or android")
+var (
+	ErrInvalidPlatform = errors.New("platform must be web, ios or android")
+	ErrInvalidName     = errors.New("name is required (max 80 chars)")
+	ErrNotFound        = errors.New("device not found")
+)
 
 type Service struct{ repo Repository }
 
@@ -27,19 +31,32 @@ func (s *Service) List(ctx context.Context, userID uuid.UUID) ([]Device, error) 
 	return out, nil
 }
 
-func (s *Service) Register(ctx context.Context, userID uuid.UUID, req RegisterRequest) (Device, error) {
+func (s *Service) Register(ctx context.Context, userID, sessionFamily uuid.UUID, req RegisterRequest) (Device, error) {
 	switch req.Platform {
 	case "web", "ios", "android":
 	default:
 		return Device{}, ErrInvalidPlatform
 	}
-	d, err := s.repo.Create(ctx, db.CreateDeviceParams{UserID: userID, Name: req.Name, Platform: req.Platform, PublicKey: req.PublicKey})
+	if req.Name == "" || len(req.Name) > 80 {
+		return Device{}, ErrInvalidName
+	}
+	d, err := s.repo.Create(ctx, db.CreateDeviceParams{UserID: userID, Name: req.Name, Platform: req.Platform, PublicKey: req.PublicKey}, sessionFamily)
 	if err != nil {
 		return Device{}, err
 	}
 	return fromDB(d), nil
 }
 
+// Revoke is "remote sign-out": the device can no longer refresh its tokens.
+// Its current access token still works until it expires (max 15 min) — that's the
+// trade-off of stateless JWTs.
 func (s *Service) Revoke(ctx context.Context, userID, id uuid.UUID) error {
-	return s.repo.Revoke(ctx, id, userID)
+	ok, err := s.repo.Revoke(ctx, id, userID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrNotFound
+	}
+	return nil
 }

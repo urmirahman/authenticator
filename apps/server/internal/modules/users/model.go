@@ -21,3 +21,7 @@ type User struct {
 func fromDB(u db.User) User {
 	return User{ID: u.ID, Email: u.Email, DisplayName: u.DisplayName, AvatarURL: u.AvatarUrl.String, CreatedAt: u.CreatedAt}
 }
+
+type UpdateRequest struct {
+	DisplayName string `json:"displayName"`
+}

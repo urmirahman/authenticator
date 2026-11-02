@@ -10,3 +10,9 @@ UPDATE sessions SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL;
 
 -- name: RevokeSessionFamily :exec
 UPDATE sessions SET revoked_at = now() WHERE family_id = $1 AND revoked_at IS NULL;
+
+-- name: BindFamilyToDevice :exec
+UPDATE sessions SET device_id = $3 WHERE family_id = $1 AND user_id = $2;
+
+-- name: RevokeSessionsByDevice :exec
+UPDATE sessions SET revoked_at = now() WHERE device_id = $1 AND user_id = $2 AND revoked_at IS NULL;

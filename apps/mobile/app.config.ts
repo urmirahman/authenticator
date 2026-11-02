@@ -22,5 +22,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ['expo-camera', { cameraPermission: 'Allow Authenticator to scan QR codes to add accounts.' }],
   ],
   experiments: { typedRoutes: true },
-  extra: { apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080' },
+  extra: { apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787' },
 });

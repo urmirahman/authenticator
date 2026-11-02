@@ -40,6 +40,24 @@ type Identity struct {
 	ProviderUserID string      `json:"provider_user_id"`
 	Email          pgtype.Text `json:"email"`
 	CreatedAt      time.Time   `json:"created_at"`
+	EmailVerified  bool        `json:"email_verified"`
+}
+
+type LoginCode struct {
+	CodeHash  []byte     `json:"code_hash"`
+	UserID    uuid.UUID  `json:"user_id"`
+	ExpiresAt time.Time  `json:"expires_at"`
+	UsedAt    *time.Time `json:"used_at"`
+}
+
+type OauthState struct {
+	State        string    `json:"state"`
+	Provider     string    `json:"provider"`
+	CodeVerifier string    `json:"code_verifier"`
+	Nonce        string    `json:"nonce"`
+	RedirectUri  string    `json:"redirect_uri"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type PasskeyCredential struct {

@@ -12,10 +12,12 @@ import (
 type OAuthProvider struct {
 	ClientID     string
 	ClientSecret string
+	Audiences    []string // extra accepted id_token audiences (iOS/Android client ids)
 }
 
 type AppleConfig struct {
-	ClientID   string // the Services ID, e.g. dev.urmirahman.authenticator.web
+	Audiences  []string // extra accepted id_token audiences (e.g. the iOS bundle id)
+	ClientID   string   // the Services ID, e.g. dev.urmirahman.authenticator.web
 	TeamID     string
 	KeyID      string
 	PrivateKey string // contents of the .p8 file (PEM)
@@ -35,6 +37,11 @@ type Config struct {
 	Facebook OAuthProvider
 	Apple    AppleConfig
 
+	// AllowedRedirects: where we may send the browser after OAuth (prefix match).
+	AllowedRedirects []string
+	// DevAuth enables POST /v1/dev/token to mint tokens without OAuth. Never in production.
+	DevAuth bool
+
 	WebAuthnRPID      string // e.g. "localhost" or "auth.example.com"
 	WebAuthnRPName    string
 	WebAuthnRPOrigins []string
@@ -42,21 +49,24 @@ type Config struct {
 
 func Load() (*Config, error) {
 	cfg := &Config{
-		Env:             get("APP_ENV", "development"),
-		Port:            getInt("PORT", 8080),
-		DatabaseURL:     get("DATABASE_URL", "postgres://authenticator:authenticator@localhost:5432/authenticator?sslmode=disable"),
-		PublicURL:       get("PUBLIC_URL", "http://localhost:8080"),
-		AllowedOrigins:  getList("ALLOWED_ORIGINS", "http://localhost:3001"),
-		JWTSecret:       get("JWT_SECRET", ""),
-		AccessTokenTTL:  getDuration("ACCESS_TOKEN_TTL", 15*time.Minute),
-		RefreshTokenTTL: getDuration("REFRESH_TOKEN_TTL", 30*24*time.Hour),
-		Google:          OAuthProvider{get("GOOGLE_CLIENT_ID", ""), get("GOOGLE_CLIENT_SECRET", "")},
-		Facebook:        OAuthProvider{get("FACEBOOK_CLIENT_ID", ""), get("FACEBOOK_CLIENT_SECRET", "")},
+		Env:              get("APP_ENV", "development"),
+		Port:             getInt("PORT", 8787),
+		DatabaseURL:      get("DATABASE_URL", "postgres://authenticator:authenticator@localhost:5433/authenticator?sslmode=disable"),
+		PublicURL:        get("PUBLIC_URL", "http://localhost:8787"),
+		AllowedOrigins:   getList("ALLOWED_ORIGINS", "http://localhost:3001"),
+		JWTSecret:        get("JWT_SECRET", ""),
+		AccessTokenTTL:   getDuration("ACCESS_TOKEN_TTL", 15*time.Minute),
+		RefreshTokenTTL:  getDuration("REFRESH_TOKEN_TTL", 30*24*time.Hour),
+		Google:           OAuthProvider{get("GOOGLE_CLIENT_ID", ""), get("GOOGLE_CLIENT_SECRET", ""), getList("GOOGLE_EXTRA_AUDIENCES", "")},
+		Facebook:         OAuthProvider{get("FACEBOOK_CLIENT_ID", ""), get("FACEBOOK_CLIENT_SECRET", ""), nil},
+		AllowedRedirects: getList("ALLOWED_REDIRECTS", "http://localhost:3001"),
+		DevAuth:          get("DEV_AUTH", "false") == "true",
 		Apple: AppleConfig{
 			ClientID:   get("APPLE_CLIENT_ID", ""),
 			TeamID:     get("APPLE_TEAM_ID", ""),
 			KeyID:      get("APPLE_KEY_ID", ""),
 			PrivateKey: get("APPLE_PRIVATE_KEY", ""),
+			Audiences:  getList("APPLE_EXTRA_AUDIENCES", ""),
 		},
 		WebAuthnRPID:      get("WEBAUTHN_RP_ID", "localhost"),
 		WebAuthnRPName:    get("WEBAUTHN_RP_NAME", "Authenticator"),
@@ -67,6 +77,9 @@ func Load() (*Config, error) {
 			return nil, fmt.Errorf("JWT_SECRET is required in production")
 		}
 		cfg.JWTSecret = "dev-only-insecure-secret-change-me"
+	}
+	if cfg.DevAuth && cfg.Env == "production" {
+		return nil, fmt.Errorf("DEV_AUTH must not be enabled in production")
 	}
 	return cfg, nil
 }

@@ -7,7 +7,8 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Get("/oauth/{provider}/start", h.start)
 	r.Get("/oauth/{provider}/callback", h.callback)
 	r.Post("/oauth/{provider}/callback", h.callback) // Apple form_post
-	r.Post("/oauth/{provider}/token", h.idToken)
+	r.Post("/oauth/{provider}/token", h.native)      // mobile native SDKs
+	r.Post("/exchange", h.exchange)                  // web: one-time code -> tokens
 	r.Post("/refresh", h.refresh)
 	r.Post("/logout", h.logout)
 }

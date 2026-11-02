@@ -1,6 +1,7 @@
 package devices
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -29,7 +30,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "bad_request", err.Error())
 		return
 	}
-	d, err := h.svc.Register(r.Context(), middleware.UserID(r.Context()), req)
+	d, err := h.svc.Register(r.Context(), middleware.UserID(r.Context()), middleware.SessionID(r.Context()), req)
 	if err != nil {
 		httpx.Error(w, http.StatusBadRequest, "bad_request", err.Error())
 		return
@@ -43,7 +44,12 @@ func (h *Handler) revoke(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "bad_request", "invalid id")
 		return
 	}
-	if err := h.svc.Revoke(r.Context(), middleware.UserID(r.Context()), id); err != nil {
+	err = h.svc.Revoke(r.Context(), middleware.UserID(r.Context()), id)
+	if errors.Is(err, ErrNotFound) {
+		httpx.Error(w, http.StatusNotFound, "not_found", err.Error())
+		return
+	}
+	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "internal", "could not revoke device")
 		return
 	}

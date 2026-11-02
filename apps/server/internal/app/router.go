@@ -16,6 +16,7 @@ import (
 	"github.com/urmirahman/authenticator/apps/server/internal/db"
 	"github.com/urmirahman/authenticator/apps/server/internal/middleware"
 	"github.com/urmirahman/authenticator/apps/server/internal/modules/auth"
+	"github.com/urmirahman/authenticator/apps/server/internal/modules/dev"
 	"github.com/urmirahman/authenticator/apps/server/internal/modules/devices"
 	"github.com/urmirahman/authenticator/apps/server/internal/modules/passkeys"
 	syncmod "github.com/urmirahman/authenticator/apps/server/internal/modules/sync"
@@ -57,7 +58,7 @@ func NewBaseRouter(cfg *config.Config, log *slog.Logger, db Pinger) chi.Router {
 }
 
 // NewRouter wires every module: repository -> service -> handler -> routes.
-func NewRouter(cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool) (http.Handler, error) {
+func NewRouter(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool) (http.Handler, error) {
 	q := db.New(pool)
 	issuer := token.NewIssuer(cfg.JWTSecret, cfg.AccessTokenTTL)
 	requireAuth := middleware.RequireAuth(issuer)
@@ -67,16 +68,21 @@ func NewRouter(cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool) (http.H
 		return nil, err
 	}
 
-	authH := auth.NewHandler(auth.NewService(auth.NewRepository(pool), issuer, auth.NewProviders(cfg), cfg.RefreshTokenTTL))
+	authSvc := auth.NewService(auth.NewRepository(pool), issuer, auth.NewProviders(ctx, cfg), cfg.AllowedRedirects, cfg.RefreshTokenTTL)
+	authH := auth.NewHandler(authSvc)
 	passkeyH := passkeys.NewHandler(passkeys.NewService(wa, passkeys.NewRepository(q)))
 	usersH := users.NewHandler(users.NewService(users.NewRepository(q)))
-	devicesH := devices.NewHandler(devices.NewService(devices.NewRepository(q)))
+	devicesH := devices.NewHandler(devices.NewService(devices.NewRepository(pool)))
 	vaultH := vault.NewHandler(vault.NewService(vault.NewRepository(q)))
 	syncH := syncmod.NewHandler(syncmod.NewService(syncmod.NewRepository(q)))
 
 	r := NewBaseRouter(cfg, log, pool)
 	r.Route("/v1", func(r chi.Router) {
 		r.Route("/auth", authH.Routes)
+		if cfg.DevAuth {
+			log.Warn("DEV_AUTH is on: POST /v1/dev/token mints tokens without sign-in")
+			r.Route("/dev", dev.NewHandler(q, authSvc).Routes)
+		}
 		r.Route("/passkeys", func(r chi.Router) { passkeyH.Routes(r, requireAuth) })
 		r.Group(func(r chi.Router) {
 			r.Use(requireAuth)

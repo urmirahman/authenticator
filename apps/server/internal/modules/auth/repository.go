@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -12,8 +13,19 @@ import (
 	"github.com/urmirahman/authenticator/apps/server/internal/db"
 )
 
+var ErrEmailTaken = errors.New("an account with this email already exists; sign in with the original method and link this provider")
+
+type OAuthState struct {
+	State, Provider, CodeVerifier, Nonce, RedirectURI string
+	ExpiresAt                                         time.Time
+}
+
 type Repository interface {
 	FindOrCreateUser(ctx context.Context, p Profile) (uuid.UUID, error)
+	SaveState(ctx context.Context, s OAuthState) error
+	ConsumeState(ctx context.Context, state, provider string) (OAuthState, error)
+	CreateLoginCode(ctx context.Context, hash []byte, userID uuid.UUID, exp time.Time) error
+	ConsumeLoginCode(ctx context.Context, hash []byte) (uuid.UUID, error)
 	CreateSession(ctx context.Context, p db.CreateSessionParams) (db.Session, error)
 	SessionByHash(ctx context.Context, hash []byte) (db.Session, error)
 	RevokeSession(ctx context.Context, id uuid.UUID) error
@@ -29,7 +41,31 @@ func NewRepository(pool *pgxpool.Pool) Repository {
 	return &pgRepository{pool: pool, q: db.New(pool)}
 }
 
-// FindOrCreateUser links a provider identity to a user, creating both if needed, in one transaction.
+// LinkDecision is the pure rule for "what do we do with this provider profile?".
+// Kept separate from SQL so it's easy to unit test.
+type LinkDecision int
+
+const (
+	UseLinkedUser    LinkDecision = iota // identity already linked
+	LinkToExisting                       // same verified email -> attach identity to that user
+	CreateNew                            // brand new person
+	RejectEmailTaken                     // email exists but this provider didn't verify it: refuse (account takeover risk)
+)
+
+func DecideLink(identityExists, userWithEmailExists, emailVerified bool) LinkDecision {
+	switch {
+	case identityExists:
+		return UseLinkedUser
+	case userWithEmailExists && emailVerified:
+		return LinkToExisting
+	case userWithEmailExists:
+		return RejectEmailTaken
+	default:
+		return CreateNew
+	}
+}
+
+// FindOrCreateUser applies DecideLink inside one transaction.
 func (r *pgRepository) FindOrCreateUser(ctx context.Context, p Profile) (uuid.UUID, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -39,28 +75,70 @@ func (r *pgRepository) FindOrCreateUser(ctx context.Context, p Profile) (uuid.UU
 	q := r.q.WithTx(tx)
 
 	ident, err := q.GetIdentity(ctx, db.GetIdentityParams{Provider: p.Provider, ProviderUserID: p.ProviderUserID})
-	if err == nil {
-		return ident.UserID, tx.Commit(ctx)
-	}
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return uuid.Nil, err
+	}
+	identityExists := err == nil
+
+	var existing db.User
+	userExists := false
+	if !identityExists && p.Email != "" {
+		existing, err = q.GetUserByEmail(ctx, p.Email)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, err
+		}
+		userExists = err == nil
 	}
 
-	// NOTE: linking by email is only safe when the provider says the email is verified.
-	user, err := q.GetUserByEmail(ctx, p.Email)
-	if errors.Is(err, pgx.ErrNoRows) {
-		user, err = q.CreateUser(ctx, db.CreateUserParams{Email: p.Email, DisplayName: p.Name})
-	}
-	if err != nil {
-		return uuid.Nil, err
+	var userID uuid.UUID
+	switch DecideLink(identityExists, userExists, p.EmailVerified) {
+	case UseLinkedUser:
+		return ident.UserID, tx.Commit(ctx)
+	case RejectEmailTaken:
+		return uuid.Nil, ErrEmailTaken
+	case LinkToExisting:
+		userID = existing.ID
+	case CreateNew:
+		email := p.Email
+		if email == "" { // e.g. Facebook without email permission
+			email = p.Provider + ":" + p.ProviderUserID
+		}
+		u, err := q.CreateUser(ctx, db.CreateUserParams{Email: email, DisplayName: p.Name})
+		if err != nil {
+			return uuid.Nil, err
+		}
+		userID = u.ID
 	}
 	if _, err := q.CreateIdentity(ctx, db.CreateIdentityParams{
-		UserID: user.ID, Provider: p.Provider, ProviderUserID: p.ProviderUserID,
-		Email: pgtype.Text{String: p.Email, Valid: p.Email != ""},
+		UserID: userID, Provider: p.Provider, ProviderUserID: p.ProviderUserID,
+		Email: pgtype.Text{String: p.Email, Valid: p.Email != ""}, EmailVerified: p.EmailVerified,
 	}); err != nil {
 		return uuid.Nil, err
 	}
-	return user.ID, tx.Commit(ctx)
+	return userID, tx.Commit(ctx)
+}
+
+func (r *pgRepository) SaveState(ctx context.Context, s OAuthState) error {
+	return r.q.CreateOAuthState(ctx, db.CreateOAuthStateParams{
+		State: s.State, Provider: s.Provider, CodeVerifier: s.CodeVerifier, Nonce: s.Nonce,
+		RedirectUri: s.RedirectURI, ExpiresAt: s.ExpiresAt,
+	})
+}
+
+func (r *pgRepository) ConsumeState(ctx context.Context, state, provider string) (OAuthState, error) {
+	s, err := r.q.ConsumeOAuthState(ctx, db.ConsumeOAuthStateParams{State: state, Provider: provider})
+	if err != nil {
+		return OAuthState{}, err
+	}
+	return OAuthState{s.State, s.Provider, s.CodeVerifier, s.Nonce, s.RedirectUri, s.ExpiresAt}, nil
+}
+
+func (r *pgRepository) CreateLoginCode(ctx context.Context, hash []byte, userID uuid.UUID, exp time.Time) error {
+	return r.q.CreateLoginCode(ctx, db.CreateLoginCodeParams{CodeHash: hash, UserID: userID, ExpiresAt: exp})
+}
+
+func (r *pgRepository) ConsumeLoginCode(ctx context.Context, hash []byte) (uuid.UUID, error) {
+	return r.q.ConsumeLoginCode(ctx, hash)
 }
 
 func (r *pgRepository) CreateSession(ctx context.Context, p db.CreateSessionParams) (db.Session, error) {

@@ -13,7 +13,8 @@ import (
 )
 
 const createIdentity = `-- name: CreateIdentity :one
-INSERT INTO identities (user_id, provider, provider_user_id, email) VALUES ($1, $2, $3, $4) RETURNING id, user_id, provider, provider_user_id, email, created_at
+INSERT INTO identities (user_id, provider, provider_user_id, email, email_verified)
+VALUES ($1, $2, $3, $4, $5) RETURNING id, user_id, provider, provider_user_id, email, created_at, email_verified
 `
 
 type CreateIdentityParams struct {
@@ -21,6 +22,7 @@ type CreateIdentityParams struct {
 	Provider       string      `json:"provider"`
 	ProviderUserID string      `json:"provider_user_id"`
 	Email          pgtype.Text `json:"email"`
+	EmailVerified  bool        `json:"email_verified"`
 }
 
 func (q *Queries) CreateIdentity(ctx context.Context, arg CreateIdentityParams) (Identity, error) {
@@ -29,6 +31,7 @@ func (q *Queries) CreateIdentity(ctx context.Context, arg CreateIdentityParams) 
 		arg.Provider,
 		arg.ProviderUserID,
 		arg.Email,
+		arg.EmailVerified,
 	)
 	var i Identity
 	err := row.Scan(
@@ -38,6 +41,7 @@ func (q *Queries) CreateIdentity(ctx context.Context, arg CreateIdentityParams) 
 		&i.ProviderUserID,
 		&i.Email,
 		&i.CreatedAt,
+		&i.EmailVerified,
 	)
 	return i, err
 }
@@ -66,8 +70,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users WHERE id = $1
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUser, id)
+	return err
+}
+
 const getIdentity = `-- name: GetIdentity :one
-SELECT id, user_id, provider, provider_user_id, email, created_at FROM identities WHERE provider = $1 AND provider_user_id = $2
+SELECT id, user_id, provider, provider_user_id, email, created_at, email_verified FROM identities WHERE provider = $1 AND provider_user_id = $2
 `
 
 type GetIdentityParams struct {
@@ -85,6 +98,7 @@ func (q *Queries) GetIdentity(ctx context.Context, arg GetIdentityParams) (Ident
 		&i.ProviderUserID,
 		&i.Email,
 		&i.CreatedAt,
+		&i.EmailVerified,
 	)
 	return i, err
 }
@@ -113,6 +127,61 @@ SELECT id, email, display_name, avatar_url, created_at, updated_at FROM users WH
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.DisplayName,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listIdentitiesByUser = `-- name: ListIdentitiesByUser :many
+SELECT id, user_id, provider, provider_user_id, email, created_at, email_verified FROM identities WHERE user_id = $1 ORDER BY created_at
+`
+
+func (q *Queries) ListIdentitiesByUser(ctx context.Context, userID uuid.UUID) ([]Identity, error) {
+	rows, err := q.db.Query(ctx, listIdentitiesByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Identity{}
+	for rows.Next() {
+		var i Identity
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Provider,
+			&i.ProviderUserID,
+			&i.Email,
+			&i.CreatedAt,
+			&i.EmailVerified,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateUserProfile = `-- name: UpdateUserProfile :one
+UPDATE users SET display_name = $2, updated_at = now() WHERE id = $1 RETURNING id, email, display_name, avatar_url, created_at, updated_at
+`
+
+type UpdateUserProfileParams struct {
+	ID          uuid.UUID `json:"id"`
+	DisplayName string    `json:"display_name"`
+}
+
+func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserProfile, arg.ID, arg.DisplayName)
 	var i User
 	err := row.Scan(
 		&i.ID,

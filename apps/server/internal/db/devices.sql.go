@@ -76,8 +76,8 @@ func (q *Queries) ListDevices(ctx context.Context, userID uuid.UUID) ([]Device, 
 	return items, nil
 }
 
-const revokeDevice = `-- name: RevokeDevice :exec
-UPDATE devices SET revoked_at = now() WHERE id = $1 AND user_id = $2
+const revokeDevice = `-- name: RevokeDevice :execrows
+UPDATE devices SET revoked_at = now() WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL
 `
 
 type RevokeDeviceParams struct {
@@ -85,7 +85,19 @@ type RevokeDeviceParams struct {
 	UserID uuid.UUID `json:"user_id"`
 }
 
-func (q *Queries) RevokeDevice(ctx context.Context, arg RevokeDeviceParams) error {
-	_, err := q.db.Exec(ctx, revokeDevice, arg.ID, arg.UserID)
+func (q *Queries) RevokeDevice(ctx context.Context, arg RevokeDeviceParams) (int64, error) {
+	result, err := q.db.Exec(ctx, revokeDevice, arg.ID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const touchDevice = `-- name: TouchDevice :exec
+UPDATE devices SET last_seen_at = now() WHERE id = $1
+`
+
+func (q *Queries) TouchDevice(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, touchDevice, id)
 	return err
 }

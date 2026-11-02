@@ -22,7 +22,7 @@ cp apps/server/.env.example apps/server/.env   # fill in JWT_SECRET (openssl ran
 cp apps/web/.env.example apps/web/.env.local
 pnpm db:up          # start Postgres in Docker
 pnpm db:migrate     # create tables
-pnpm dev            # server :8080, web :3001, Expo dev server
+pnpm dev            # server :8787, web :3001, Expo dev server
 ```
 
 > The Go server reads real environment variables. To load `apps/server/.env`, run

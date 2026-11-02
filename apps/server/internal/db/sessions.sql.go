@@ -13,6 +13,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const bindFamilyToDevice = `-- name: BindFamilyToDevice :exec
+UPDATE sessions SET device_id = $3 WHERE family_id = $1 AND user_id = $2
+`
+
+type BindFamilyToDeviceParams struct {
+	FamilyID uuid.UUID     `json:"family_id"`
+	UserID   uuid.UUID     `json:"user_id"`
+	DeviceID uuid.NullUUID `json:"device_id"`
+}
+
+func (q *Queries) BindFamilyToDevice(ctx context.Context, arg BindFamilyToDeviceParams) error {
+	_, err := q.db.Exec(ctx, bindFamilyToDevice, arg.FamilyID, arg.UserID, arg.DeviceID)
+	return err
+}
+
 const createSession = `-- name: CreateSession :one
 INSERT INTO sessions (user_id, device_id, family_id, refresh_token_hash, user_agent, expires_at)
 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, user_id, device_id, family_id, refresh_token_hash, user_agent, ip, expires_at, revoked_at, created_at
@@ -89,5 +104,19 @@ UPDATE sessions SET revoked_at = now() WHERE family_id = $1 AND revoked_at IS NU
 
 func (q *Queries) RevokeSessionFamily(ctx context.Context, familyID uuid.UUID) error {
 	_, err := q.db.Exec(ctx, revokeSessionFamily, familyID)
+	return err
+}
+
+const revokeSessionsByDevice = `-- name: RevokeSessionsByDevice :exec
+UPDATE sessions SET revoked_at = now() WHERE device_id = $1 AND user_id = $2 AND revoked_at IS NULL
+`
+
+type RevokeSessionsByDeviceParams struct {
+	DeviceID uuid.NullUUID `json:"device_id"`
+	UserID   uuid.UUID     `json:"user_id"`
+}
+
+func (q *Queries) RevokeSessionsByDevice(ctx context.Context, arg RevokeSessionsByDeviceParams) error {
+	_, err := q.db.Exec(ctx, revokeSessionsByDevice, arg.DeviceID, arg.UserID)
 	return err
 }
