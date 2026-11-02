@@ -34,3 +34,14 @@ Notes:
   so it can create items offline and use the id as encryption associated data.
 - `ON DELETE CASCADE` from `users` makes "delete my account" one statement.
 - Never store plaintext refresh tokens, TOTP secrets or vault keys.
+
+## Migrations
+
+| File                              | What it adds                                                                            |
+| --------------------------------- | --------------------------------------------------------------------------------------- |
+| `00001_init.sql`                  | Core tables                                                                             |
+| `00002_auth_phase1.sql`           | `identities.email_verified`, `oauth_states`, `login_codes`, `sessions(device_id)` index |
+| `00003_vault_phase2.sql`          | `vault_items.kind` (account/folder), `vault_items.updated_by_device`                    |
+| `00004_passkeys_audit_phase3.sql` | `passkey_credentials.credential`, `webauthn_challenges`                                 |
+
+Every schema change is a new numbered goose file — never edit one that has already run.

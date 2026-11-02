@@ -45,4 +45,7 @@ Handy shortcuts: `pnpm server`, `pnpm web`, `pnpm mobile`, `pnpm ios`, `pnpm and
 - [Architecture](docs/ARCHITECTURE.md): system overview, auth flows, E2E encryption design
 - [Database](docs/DATABASE.md): tables and why they exist
 - [Decisions](docs/DECISIONS.md): short ADRs
+- [Features](docs/FEATURES.md): feature list by phase and status
+- [OAuth setup](docs/OAUTH_SETUP.md): creating Google / Facebook / Apple apps
+- [API spec](apps/server/api/openapi.yaml): OpenAPI 3.1
 - [Server guide](apps/server/README.md): a tour of the Go code for learners

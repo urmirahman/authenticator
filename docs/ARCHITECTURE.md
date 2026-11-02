@@ -45,7 +45,8 @@ Handlers only translate HTTP <-> Go types. Services hold rules and depend on a `
 ## Authentication
 
 Our own session = **short-lived JWT access token (15 min)** + **opaque rotating refresh token (30 days)**.
-Only a SHA-256 hash of the refresh token is stored (`sessions.refresh_token_hash`).
+Only a SHA-256 hash of the refresh token is stored (`sessions.refresh_token_hash`). The JWT carries
+`sub` (user id) and `sid` (the session family id), which is how `POST /devices` knows which session to bind.
 
 ### Social sign-in on web (Google, Facebook, Apple)
 
@@ -54,26 +55,42 @@ sequenceDiagram
   participant B as Browser
   participant S as Go API
   participant P as Provider
-  B->>S: GET /v1/auth/oauth/{provider}/start
-  S->>B: 302 to provider + state cookie (CSRF)
+  B->>S: GET /v1/auth/oauth/{provider}/start?redirect_uri=...
+  S->>S: save state + PKCE verifier + nonce (oauth_states, 10 min)
+  S->>B: 302 to provider (state, code_challenge, nonce)
   B->>P: user consents
-  P->>S: callback ?code&state  (Apple: form_post)
-  S->>S: check state, exchange code, verify id_token / fetch profile
-  S->>S: find-or-create user + identity, create session
-  S->>B: 302 to web app with one-time code
-  B->>S: exchange one-time code -> access + refresh tokens
+  P->>S: callback ?code&state (Apple: form_post)
+  S->>S: consume state (one-time), exchange code + PKCE verifier
+  S->>S: Google/Apple: verify id_token via JWKS (iss, aud, exp, nonce). Facebook: Graph /me
+  S->>S: find-or-link-or-create user
+  S->>B: 302 redirect_uri?code=<one-time login code, 1 min>
+  B->>S: POST /v1/auth/exchange {code} -> access + refresh tokens
 ```
 
-- **Google:** OpenID Connect; verify the `id_token` (signature via Google JWKS, `aud`, `iss`, `email_verified`).
-- **Facebook:** not OIDC for web logins; call `GET /me?fields=id,name,email` with the access token.
-- **Apple:** the _client secret is a JWT_ you sign (ES256) with the `.p8` key, `kid`=Key ID,
-  `iss`=Team ID, `sub`=Services ID, `aud`=`https://appleid.apple.com` (see `pkg/applesecret`).
-  Apple sends the user's name **only on first sign-in**, so save it then. Uses `response_mode=form_post`.
+- **state** stops CSRF, **PKCE** makes a stolen authorization code useless, **nonce** ties the id_token to this attempt.
+- `redirect_uri` must start with one of `ALLOWED_REDIRECTS` (no open redirects).
+- Tokens never appear in a URL; only a 1-minute, single-use login code does.
+- **Apple:** the client secret is an ES256 JWT signed with your `.p8` key (`pkg/applesecret`); the name arrives only on first sign-in.
+- Setup steps for each provider: [OAUTH_SETUP.md](OAUTH_SETUP.md).
+
+### Account linking (who is this person?)
+
+`DecideLink` in `modules/auth/repository.go`:
+
+| Identity already linked? | User with same email? | Provider verified the email? | Result                                          |
+| ------------------------ | --------------------- | ---------------------------- | ----------------------------------------------- |
+| yes                      | –                     | –                            | sign in as that user                            |
+| no                       | yes                   | yes                          | link this provider to the existing user         |
+| no                       | yes                   | no                           | **409 email_taken** (prevents account takeover) |
+| no                       | no                    | –                            | create user + identity                          |
+
+Google and Apple say `email_verified`; Facebook doesn't, so Facebook never links by email.
 
 ### Social sign-in on mobile
 
-Native SDKs (Sign in with Apple, Google Sign-In) return an `id_token`. The app sends it to
-`POST /v1/auth/oauth/{provider}/token`; the server verifies it against the provider's JWKS and issues our tokens.
+Native SDKs return an `id_token` (Google, Apple) or an access token (Facebook). The app sends it to
+`POST /v1/auth/oauth/{provider}/token` (plus the raw `nonce`). The server verifies it the same way.
+Accepted audiences = web client id + `*_EXTRA_AUDIENCES` (iOS/Android client ids, bundle id).
 
 ### Passkeys (WebAuthn)
 
@@ -82,20 +99,30 @@ sequenceDiagram
   participant D as Device
   participant S as Go API
   D->>S: POST /v1/passkeys/login/begin
-  S->>D: challenge + options (challengeId)
-  D->>D: authenticator signs challenge (Face ID / Touch ID)
-  D->>S: POST /v1/passkeys/login/finish (assertion)
-  S->>S: verify signature with stored public key, bump sign_count
+  S->>S: store challenge (webauthn_challenges, 5 min, one-time)
+  S->>D: challengeId + options.publicKey
+  D->>D: user picks a passkey, Face ID / Touch ID signs the challenge
+  D->>S: POST /v1/passkeys/login/finish {challengeId, credential}
+  S->>S: userHandle -> user, verify signature with stored public key, update sign count
   S->>D: access + refresh tokens
 ```
 
-Registration is the same shape with `register/begin|finish` (requires an existing session).
-Mobile needs an associated domain (`webcredentials:`) / Digital Asset Links so the OS trusts the RP ID.
+Registration (`register/begin|finish`, needs a session) is the same shape; the device creates a
+key pair and we store the public key. Discoverable ("resident") keys mean no username is needed.
 
-### Refresh rotation and reuse detection
+### Sessions, devices and remote sign-out
 
-Each refresh revokes the old session row and creates a new one in the same `family_id`.
-If a _revoked_ token is ever presented again, the whole family is revoked (likely theft).
+- Refresh rotates the token; presenting an already-rotated token revokes the whole family (likely theft).
+- `POST /devices` registers a device and binds the current session family to it.
+- `DELETE /devices/{id}` revokes the device **and every refresh token bound to it**. Its current access
+  token keeps working until it expires (≤ 15 min), the usual trade-off of stateless JWTs.
+
+### Hardening
+
+- Request IDs (`X-Request-Id` response header), structured request logs.
+- Security headers: `nosniff`, `X-Frame-Options: DENY`, CSP `default-src 'none'`, `Cache-Control: no-store`, HSTS in production.
+- Rate limit: 30 requests/minute per IP on `/auth/*`, `/passkeys/login/*`, `/dev/*` (429 JSON).
+- Activity log (`audit_log`): sign-ins, devices added/revoked, passkeys added/removed, vault created / key changed. `GET /v1/activity`.
 
 ## End-to-end encrypted sync
 
@@ -119,10 +146,15 @@ each TOTP account (JSON) ──XChaCha20-Poly1305(vault key, random 24-byte nonc
 
 ### Sync protocol
 
+Items are `account` or `folder` (folders are encrypted too; an account's folder id lives inside its ciphertext).
+
 - `GET /v1/sync/{vaultId}?cursor=N` returns items changed after change-log `seq` N, plus the new cursor.
-- `POST /v1/sync` pushes changes. Each has a `version`; the server only accepts it if it is newer
-  (optimistic concurrency). Older writes come back as `conflicts` for the client to merge
-  (decrypt both, keep newest per field, re-encrypt, push with version+1).
+- `POST /v1/sync` pushes up to 500 changes in one transaction. Rule (`Accepts`): a new item must be
+  version 1, an edit must be exactly server version + 1. Anything else comes back in `conflicts`
+  with the server copy; the client decrypts both, merges, and pushes version + 1.
+- Rows are locked with `SELECT … FOR UPDATE`, so two devices racing on the same item can't both win.
+- REST helpers (`PUT/DELETE /vaults/{id}/items/{itemId}`) use the same engine and answer 409 on conflict.
+- Every accepted change appends to `sync_changes`; its `seq` is the cursor. Pull returns each changed item once.
 - Deletes are tombstones (`deleted = true`) so other devices learn about them.
 
 ### TOTP

@@ -1,0 +1,726 @@
+openapi: 3.1.0
+info:
+  title: Authenticator API
+  version: 0.3.0
+  description: |
+    Go API for the Authenticator app. The server never sees TOTP secrets: vault items are
+    encrypted on the device (XChaCha20-Poly1305) and stored as opaque ciphertext.
+    Binary fields (ciphertext, nonce, salt, wrappedKey) are base64 strings in JSON.
+servers:
+  - url: http://localhost:8787/v1
+security:
+  - bearer: []
+tags:
+  - name: auth
+  - name: passkeys
+  - name: users
+  - name: devices
+  - name: vaults
+  - name: sync
+  - name: activity
+
+paths:
+  /health:
+    get:
+      tags: [auth]
+      security: []
+      summary: Liveness + database check
+      responses:
+        '200':
+          {
+            description: OK,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, properties: { status: { type: string } } } },
+              },
+          }
+        '503': { description: Database down }
+
+  /auth/oauth/{provider}/start:
+    get:
+      tags: [auth]
+      security: []
+      summary: Start web OAuth (redirects to the provider)
+      parameters:
+        - $ref: '#/components/parameters/Provider'
+        - {
+            name: redirect_uri,
+            in: query,
+            required: true,
+            schema: { type: string, format: uri },
+            description: Must match ALLOWED_REDIRECTS,
+          }
+      responses:
+        '302': { description: Redirect to provider (state + PKCE + nonce stored server-side) }
+        '400': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /auth/oauth/{provider}/callback:
+    get:
+      tags: [auth]
+      security: []
+      summary: Provider redirects here (Google, Facebook)
+      parameters:
+        - $ref: '#/components/parameters/Provider'
+        - { name: state, in: query, required: true, schema: { type: string } }
+        - { name: code, in: query, required: true, schema: { type: string } }
+      responses:
+        '302': { description: 'Redirect to redirect_uri?code=<one-time login code>' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+    post:
+      tags: [auth]
+      security: []
+      summary: Apple form_post callback
+      parameters: [{ $ref: '#/components/parameters/Provider' }]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              {
+                type: object,
+                properties:
+                  {
+                    state: { type: string },
+                    code: { type: string },
+                    user: { type: string, description: 'JSON, first sign-in only' },
+                  },
+              }
+      responses:
+        '302': { description: 'Redirect to redirect_uri?code=<one-time login code>' }
+  /auth/oauth/{provider}/token:
+    post:
+      tags: [auth]
+      security: []
+      summary: Mobile native sign-in (id_token / authorization code / Facebook access token)
+      parameters: [{ $ref: '#/components/parameters/Provider' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/NativeSignIn' } } }
+      responses:
+        '200': { $ref: '#/components/responses/Tokens' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { description: Email belongs to another account and this provider did not verify it }
+  /auth/exchange:
+    post:
+      tags: [auth]
+      security: []
+      summary: Swap the one-time login code (from the web callback) for tokens
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              {
+                schema: { type: object, required: [code], properties: { code: { type: string } } },
+              },
+          }
+      responses:
+        '200': { $ref: '#/components/responses/Tokens' }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/refresh:
+    post:
+      tags: [auth]
+      security: []
+      summary: Rotate the refresh token (reuse of an old one revokes the whole session)
+      requestBody: { $ref: '#/components/requestBodies/Refresh' }
+      responses:
+        '200': { $ref: '#/components/responses/Tokens' }
+        '401': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /auth/logout:
+    post:
+      summary: POST /auth/logout
+      tags: [auth]
+      security: []
+      requestBody: { $ref: '#/components/requestBodies/Refresh' }
+      responses: { '204': { description: Session revoked } }
+  /dev/token:
+    post:
+      tags: [auth]
+      security: []
+      summary: DEV ONLY (DEV_AUTH=true, never production) — mint tokens for an email
+      requestBody:
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [email],
+                    properties: { email: { type: string }, name: { type: string } },
+                  },
+              },
+          }
+      responses: { '200': { $ref: '#/components/responses/Tokens' } }
+
+  /passkeys/register/begin:
+    post:
+      tags: [passkeys]
+      summary: Get WebAuthn creation options
+      responses: { '200': { $ref: '#/components/responses/Begin' } }
+  /passkeys/register/finish:
+    post:
+      summary: POST /passkeys/register/finish
+      tags: [passkeys]
+      requestBody: { $ref: '#/components/requestBodies/Finish' }
+      responses:
+        '201':
+          {
+            description: Created,
+            content: { application/json: { schema: { $ref: '#/components/schemas/Passkey' } } },
+          }
+        '401': { $ref: '#/components/responses/Error' }
+  /passkeys/login/begin:
+    post:
+      tags: [passkeys]
+      security: []
+      summary: Discoverable login options (no username)
+      responses: { '200': { $ref: '#/components/responses/Begin' } }
+  /passkeys/login/finish:
+    post:
+      summary: POST /passkeys/login/finish
+      tags: [passkeys]
+      security: []
+      requestBody: { $ref: '#/components/requestBodies/Finish' }
+      responses:
+        '200': { $ref: '#/components/responses/Tokens' }
+        '401': { $ref: '#/components/responses/Error' }
+  /passkeys:
+    get:
+      summary: GET /passkeys
+      tags: [passkeys]
+      responses:
+        {
+          '200':
+            {
+              description: OK,
+              content:
+                {
+                  application/json:
+                    { schema: { type: array, items: { $ref: '#/components/schemas/Passkey' } } },
+                },
+            },
+        }
+  /passkeys/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch:
+      summary: PATCH /passkeys/{id}
+      tags: [passkeys]
+      requestBody:
+        {
+          content:
+            {
+              application/json:
+                { schema: { type: object, properties: { name: { type: string } } } },
+            },
+        }
+      responses:
+        { '204': { description: Renamed }, '404': { $ref: '#/components/responses/Error' } }
+    delete:
+      summary: DELETE /passkeys/{id}
+      tags: [passkeys]
+      responses:
+        { '204': { description: Deleted }, '404': { $ref: '#/components/responses/Error' } }
+
+  /users/me:
+    get:
+      summary: GET /users/me
+      tags: [users]
+      responses: { '200': { $ref: '#/components/responses/User' } }
+    patch:
+      summary: PATCH /users/me
+      tags: [users]
+      requestBody:
+        {
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    { type: object, properties: { displayName: { type: string, maxLength: 80 } } },
+                },
+            },
+        }
+      responses: { '200': { $ref: '#/components/responses/User' } }
+    delete:
+      tags: [users]
+      summary: Delete the account and everything in it (cascade)
+      responses: { '204': { description: Deleted } }
+
+  /devices:
+    get:
+      summary: GET /devices
+      tags: [devices]
+      responses:
+        {
+          '200':
+            {
+              description: OK,
+              content:
+                {
+                  application/json:
+                    { schema: { type: array, items: { $ref: '#/components/schemas/Device' } } },
+                },
+            },
+        }
+    post:
+      tags: [devices]
+      summary: Register this device and bind the current session to it
+      requestBody:
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [name, platform, publicKey],
+                    properties:
+                      {
+                        name: { type: string },
+                        platform: { type: string, enum: [web, ios, android] },
+                        publicKey: { type: string },
+                      },
+                  },
+              },
+          }
+      responses:
+        {
+          '201':
+            {
+              description: Created,
+              content: { application/json: { schema: { $ref: '#/components/schemas/Device' } } },
+            },
+        }
+  /devices/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    delete:
+      tags: [devices]
+      summary: Remote sign-out (revokes the device and its refresh tokens)
+      responses:
+        { '204': { description: Revoked }, '404': { $ref: '#/components/responses/Error' } }
+
+  /vaults:
+    get:
+      summary: GET /vaults
+      tags: [vaults]
+      responses:
+        {
+          '200':
+            {
+              description: OK,
+              content:
+                {
+                  application/json:
+                    { schema: { type: array, items: { $ref: '#/components/schemas/Vault' } } },
+                },
+            },
+        }
+    post:
+      summary: POST /vaults
+      tags: [vaults]
+      requestBody:
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [kdf, wrappedKey],
+                    properties:
+                      {
+                        name: { type: string },
+                        kdf: { $ref: '#/components/schemas/KDF' },
+                        wrappedKey: { type: string, format: byte },
+                      },
+                  },
+              },
+          }
+      responses:
+        '201':
+          {
+            description: Created,
+            content: { application/json: { schema: { $ref: '#/components/schemas/Vault' } } },
+          }
+        '400': { $ref: '#/components/responses/Error' }
+  /vaults/{vaultId}:
+    parameters: [{ $ref: '#/components/parameters/VaultId' }]
+    get:
+      tags: [vaults]
+      summary: Key envelope (KDF params + wrapped vault key)
+      responses:
+        {
+          '200':
+            {
+              description: OK,
+              content: { application/json: { schema: { $ref: '#/components/schemas/Vault' } } },
+            },
+          '404': { $ref: '#/components/responses/Error' },
+        }
+  /vaults/{vaultId}/key:
+    parameters: [{ $ref: '#/components/parameters/VaultId' }]
+    put:
+      tags: [vaults]
+      summary: Re-wrap the vault key after a master-password change
+      requestBody:
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [kdf, wrappedKey],
+                    properties:
+                      {
+                        kdf: { $ref: '#/components/schemas/KDF' },
+                        wrappedKey: { type: string, format: byte },
+                      },
+                  },
+              },
+          }
+      responses:
+        {
+          '200':
+            {
+              description: OK,
+              content: { application/json: { schema: { $ref: '#/components/schemas/Vault' } } },
+            },
+        }
+  /vaults/{vaultId}/items:
+    parameters: [{ $ref: '#/components/parameters/VaultId' }]
+    get:
+      tags: [vaults]
+      summary: Live (non-deleted) encrypted items
+      responses:
+        {
+          '200':
+            {
+              description: OK,
+              content:
+                {
+                  application/json:
+                    { schema: { type: array, items: { $ref: '#/components/schemas/Item' } } },
+                },
+            },
+        }
+  /vaults/{vaultId}/items/{itemId}:
+    parameters:
+      - $ref: '#/components/parameters/VaultId'
+      - {
+          name: itemId,
+          in: path,
+          required: true,
+          schema: { type: string, format: uuid },
+          description: Generated by the client,
+        }
+    get:
+      summary: GET /vaults/{vaultId}/items/{itemId}
+      tags: [vaults]
+      responses:
+        {
+          '200':
+            {
+              description: OK,
+              content: { application/json: { schema: { $ref: '#/components/schemas/Item' } } },
+            },
+        }
+    put:
+      tags: [vaults]
+      summary: Create (version 1) or update (version = server version + 1)
+      parameters: [{ $ref: '#/components/parameters/DeviceHeader' }]
+      requestBody:
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [ciphertext, nonce, version],
+                    properties:
+                      {
+                        kind: { type: string, enum: [account, folder] },
+                        ciphertext: { type: string, format: byte },
+                        nonce: { type: string, format: byte },
+                        version: { type: integer },
+                      },
+                  },
+              },
+          }
+      responses:
+        '200':
+          {
+            description: Saved,
+            content:
+              { application/json: { schema: { $ref: '#/components/schemas/PushResponse' } } },
+          }
+        '409':
+          { description: 'Conflict: body.conflicts has the server copy. Pull, merge, then retry.' }
+    delete:
+      tags: [vaults]
+      summary: Tombstone the item
+      parameters:
+        - { name: version, in: query, required: true, schema: { type: integer } }
+        - $ref: '#/components/parameters/DeviceHeader'
+      responses: { '200': { description: Deleted }, '409': { description: Conflict } }
+
+  /sync/{vaultId}:
+    parameters: [{ $ref: '#/components/parameters/VaultId' }]
+    get:
+      tags: [sync]
+      summary: Pull changes after a cursor (empty = full sync). Repeat while hasMore.
+      parameters: [{ name: cursor, in: query, schema: { type: string } }]
+      responses:
+        {
+          '200':
+            {
+              description: OK,
+              content:
+                { application/json: { schema: { $ref: '#/components/schemas/PullResponse' } } },
+            },
+        }
+  /sync:
+    post:
+      tags: [sync]
+      summary: Push up to 500 changes (optimistic concurrency per item)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vaultId, changes]
+              properties:
+                vaultId: { type: string, format: uuid }
+                deviceId: { type: string, format: uuid }
+                changes:
+                  { type: array, maxItems: 500, items: { $ref: '#/components/schemas/Change' } }
+      responses:
+        {
+          '200':
+            {
+              description: OK,
+              content:
+                { application/json: { schema: { $ref: '#/components/schemas/PushResponse' } } },
+            },
+        }
+
+  /activity:
+    get:
+      tags: [activity]
+      summary: Your security events, newest first (keyset pagination)
+      parameters:
+        - {
+            name: before,
+            in: query,
+            schema: { type: integer },
+            description: '"next" from the previous page',
+          }
+        - { name: limit, in: query, schema: { type: integer, maximum: 100, default: 50 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next: { type: string }
+                  events: { type: array, items: { $ref: '#/components/schemas/Event' } }
+
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Provider:
+      {
+        name: provider,
+        in: path,
+        required: true,
+        schema: { type: string, enum: [google, facebook, apple] },
+      }
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    VaultId: { name: vaultId, in: path, required: true, schema: { type: string, format: uuid } }
+    DeviceHeader:
+      {
+        name: X-Device-Id,
+        in: header,
+        schema: { type: string, format: uuid },
+        description: Recorded in the change log,
+      }
+  requestBodies:
+    Refresh:
+      required: true
+      content:
+        {
+          application/json:
+            {
+              schema:
+                {
+                  type: object,
+                  required: [refreshToken],
+                  properties: { refreshToken: { type: string } },
+                },
+            },
+        }
+    Finish:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [challengeId, credential]
+            properties:
+              challengeId: { type: string, format: uuid }
+              credential:
+                { type: object, description: PublicKeyCredential JSON from the browser / OS }
+              name: { type: string }
+  responses:
+    Error:
+      description: Error
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Tokens:
+      description: Session tokens
+      content: { application/json: { schema: { $ref: '#/components/schemas/Tokens' } } }
+    Begin:
+      description: WebAuthn options — pass options.publicKey to the platform API
+      content:
+        {
+          application/json:
+            {
+              schema:
+                {
+                  type: object,
+                  properties:
+                    { challengeId: { type: string, format: uuid }, options: { type: object } },
+                },
+            },
+        }
+    User:
+      description: User
+      content: { application/json: { schema: { $ref: '#/components/schemas/User' } } }
+  schemas:
+    Error:
+      type: object
+      properties:
+        {
+          error:
+            { type: object, properties: { code: { type: string }, message: { type: string } } },
+        }
+    Tokens:
+      type: object
+      properties:
+        {
+          accessToken: { type: string },
+          refreshToken: { type: string },
+          expiresIn: { type: integer },
+        }
+    NativeSignIn:
+      type: object
+      properties:
+        idToken: { type: string, description: Google / Apple }
+        nonce: { type: string, description: Raw nonce (SHA-256 hex form also accepted) }
+        authorizationCode: { type: string, description: Apple alternative to idToken }
+        codeVerifier: { type: string }
+        redirectUri: { type: string }
+        accessToken: { type: string, description: Facebook }
+        name: { type: string, description: Apple sends the name only on first sign-in }
+    User:
+      type: object
+      properties:
+        {
+          id: { type: string, format: uuid },
+          email: { type: string },
+          displayName: { type: string },
+          avatarUrl: { type: string },
+          createdAt: { type: string, format: date-time },
+        }
+    Device:
+      type: object
+      properties:
+        {
+          id: { type: string, format: uuid },
+          name: { type: string },
+          platform: { type: string },
+          publicKey: { type: string },
+          lastSeenAt: { type: string, format: date-time },
+        }
+    Passkey:
+      type: object
+      properties:
+        {
+          id: { type: string, format: uuid },
+          name: { type: string },
+          backupEligible: { type: boolean },
+          createdAt: { type: string, format: date-time },
+          lastUsedAt: { type: string, format: date-time },
+        }
+    KDF:
+      type: object
+      required: [algorithm, salt, memoryKiB, iterations, parallelism]
+      properties:
+        algorithm: { type: string, enum: [argon2id] }
+        salt: { type: string, format: byte, description: '>= 16 bytes' }
+        memoryKiB: { type: integer, minimum: 19456 }
+        iterations: { type: integer, minimum: 2 }
+        parallelism: { type: integer, minimum: 1 }
+    Vault:
+      type: object
+      properties:
+        {
+          id: { type: string, format: uuid },
+          name: { type: string },
+          kdf: { $ref: '#/components/schemas/KDF' },
+          wrappedKey: { type: string, format: byte },
+          createdAt: { type: string, format: date-time },
+        }
+    Item:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        vaultId: { type: string, format: uuid }
+        kind: { type: string, enum: [account, folder] }
+        ciphertext: { type: string, format: byte }
+        nonce: { type: string, format: byte, description: 24 bytes }
+        version: { type: integer }
+        deleted: { type: boolean }
+        updatedAt: { type: string, format: date-time }
+    Change:
+      type: object
+      required: [id, version]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [account, folder] }
+        ciphertext: { type: string, format: byte }
+        nonce: { type: string, format: byte }
+        version: { type: integer, minimum: 1 }
+        deleted: { type: boolean }
+    PullResponse:
+      type: object
+      properties:
+        {
+          items: { type: array, items: { $ref: '#/components/schemas/Item' } },
+          cursor: { type: string },
+          hasMore: { type: boolean },
+        }
+    PushResponse:
+      type: object
+      properties:
+        accepted: { type: array, items: { type: string, format: uuid } }
+        conflicts: { type: array, items: { $ref: '#/components/schemas/Item' } }
+        cursor: { type: string }
+    Event:
+      type: object
+      properties:
+        {
+          id: { type: integer },
+          action: { type: string },
+          ip: { type: string },
+          userAgent: { type: string },
+          metadata: { type: object },
+          createdAt: { type: string, format: date-time },
+        }
