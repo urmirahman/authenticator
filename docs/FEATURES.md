@@ -8,7 +8,7 @@ Google Authenticator parity plus extras. **Phase** = when it ships. **Status**: 
 1. **Sign-in, sessions, devices** — server ✅
 2. **Encrypted vault, accounts, sync** — server ✅
 3. **Passkeys, security policies, activity log** — server ✅ (app lock, screenshot blocking etc. are client features)
-4. **Import/export and extras** — ⬜
+4. **Import/export and extras** — server ✅, parsers ✅, UI in progress
 
 ## Core
 
@@ -20,9 +20,9 @@ Google Authenticator parity plus extras. **Phase** = when it ships. **Status**: 
 | HOTP (counter) accounts                                             | 2     | 🟡        | `hotp()` exists; counter lives inside the encrypted item, synced via versions                            |
 | Tap to copy + next-code preview                                     | 2     | ⬜        | Client                                                                                                   |
 | Search, rename, reorder, delete                                     | 2     | 🟡        | Server: update + tombstones done; search/order happen client-side on decrypted data                      |
-| Issuer icons                                                        | 4     | ⬜        | Bundled icon set keyed by issuer                                                                         |
+| Issuer icons                                                        | 4     | ✅ data   | Curated map in `@repo/importers` (Simple Icons slug + color, initials fallback)                          |
 | Sign in with Google / Facebook / Apple (backup + cross-device sync) | 1     | ✅ server | PKCE + nonce, JWKS-verified id_tokens, mobile token exchange. Needs OAuth apps ([setup](OAUTH_SETUP.md)) |
-| Transfer to a new phone via export QR batch                         | 4     | ⬜        | Encrypted, chunked QR codes                                                                              |
+| Transfer to a new phone via export QR batch                         | 4     | 🟡        | `toGoogleMigration()` builds QR batches; UI pending                                                      |
 | Fully offline                                                       | 2     | 🟡        | Codes computed on device; client-generated item ids allow offline creates                                |
 
 ## Security
@@ -41,11 +41,11 @@ Google Authenticator parity plus extras. **Phase** = when it ships. **Status**: 
 
 ## Extras
 
-| Feature                                         | Phase | Status    | Notes                                         |
-| ----------------------------------------------- | ----- | --------- | --------------------------------------------- |
-| Folders / tags                                  | 2     | ✅ server | Folders are encrypted items (`kind = folder`) |
-| Encrypted backup export / import                | 4     | ⬜        | Password-protected file                       |
-| Import from Google Authenticator / Authy / 2FAS | 4     | ⬜        | `otpauth-migration://` protobuf, 2FAS JSON    |
-| Widgets + watch                                 | 4     | ⬜        | iOS/Android widgets, watchOS/Wear OS          |
-| Browser extension autofill                      | 4     | ⬜        | Reuses web crypto + api-client                |
-| Light / dark themes                             | 4     | ⬜        | Client                                        |
+| Feature                                         | Phase | Status     | Notes                                                                      |
+| ----------------------------------------------- | ----- | ---------- | -------------------------------------------------------------------------- |
+| Folders / tags                                  | 2     | ✅ server  | Folders are encrypted items (`kind = folder`)                              |
+| Encrypted backup export / import                | 4     | ✅ server  | `/v1/backups` stores ciphertext only; client encryption + UI pending       |
+| Import from Google Authenticator / Authy / 2FAS | 4     | ✅ parsers | `@repo/importers`: Google migration, 2FAS, Aegis, otpauth lists (23 tests) |
+| Widgets + watch                                 | 4     | ⬜         | iOS/Android widgets, watchOS/Wear OS                                       |
+| Browser extension autofill                      | 4     | ⬜         | Reuses web crypto + api-client                                             |
+| Light / dark themes                             | 4     | ⬜         | Client                                                                     |

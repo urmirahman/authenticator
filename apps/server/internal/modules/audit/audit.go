@@ -22,13 +22,17 @@ import (
 
 // Actions. Keep them stable: clients may show translated labels per action.
 const (
-	SignIn          = "auth.sign_in"
-	DeviceAdded     = "device.added"
-	DeviceRevoked   = "device.revoked"
-	PasskeyAdded    = "passkey.added"
-	PasskeyRemoved  = "passkey.removed"
-	VaultCreated    = "vault.created"
-	VaultKeyChanged = "vault.key_changed"
+	SignIn           = "auth.sign_in"
+	DeviceAdded      = "device.added"
+	DeviceRevoked    = "device.revoked"
+	PasskeyAdded     = "passkey.added"
+	PasskeyRemoved   = "passkey.removed"
+	VaultCreated     = "vault.created"
+	VaultKeyChanged  = "vault.key_changed"
+	BackupCreated    = "backup.created"
+	BackupDownloaded = "backup.downloaded"
+	BackupDeleted    = "backup.deleted"
+	AccountExported  = "account.exported"
 )
 
 // Recorder is what other modules depend on (an interface, so tests can pass a no-op).

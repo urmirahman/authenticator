@@ -7,12 +7,16 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/urmirahman/authenticator/apps/server/internal/middleware"
+	"github.com/urmirahman/authenticator/apps/server/internal/modules/audit"
 	"github.com/urmirahman/authenticator/apps/server/pkg/httpx"
 )
 
-type Handler struct{ svc *Service }
+type Handler struct {
+	svc   *Service
+	audit audit.Recorder
+}
 
-func NewHandler(svc *Service) *Handler { return &Handler{svc: svc} }
+func NewHandler(svc *Service, rec audit.Recorder) *Handler { return &Handler{svc: svc, audit: rec} }
 
 func writeUser(w http.ResponseWriter, u User, err error) {
 	switch {
@@ -48,4 +52,17 @@ func (h *Handler) remove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// export: GET /users/me/export — downloads as a JSON file.
+func (h *Handler) export(w http.ResponseWriter, r *http.Request) {
+	uid := middleware.UserID(r.Context())
+	e, err := h.svc.Export(r.Context(), uid)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "internal", "could not export data")
+		return
+	}
+	h.audit.Record(r, uid, audit.AccountExported, nil)
+	w.Header().Set("Content-Disposition", `attachment; filename="authenticator-data-export.json"`)
+	httpx.JSON(w, http.StatusOK, e)
 }

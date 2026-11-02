@@ -22,6 +22,18 @@ type AuditLog struct {
 	CreatedAt time.Time     `json:"created_at"`
 }
 
+type Backup struct {
+	ID         uuid.UUID `json:"id"`
+	UserID     uuid.UUID `json:"user_id"`
+	Name       string    `json:"name"`
+	Ciphertext []byte    `json:"ciphertext"`
+	Nonce      []byte    `json:"nonce"`
+	Kdf        []byte    `json:"kdf"`
+	ItemCount  int32     `json:"item_count"`
+	SizeBytes  int32     `json:"size_bytes"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 type Device struct {
 	ID         uuid.UUID  `json:"id"`
 	UserID     uuid.UUID  `json:"user_id"`

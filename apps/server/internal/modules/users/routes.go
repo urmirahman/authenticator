@@ -7,4 +7,5 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Get("/me", h.me)
 	r.Patch("/me", h.update)
 	r.Delete("/me", h.remove)
+	r.Get("/me/export", h.export)
 }

@@ -1,5 +1,7 @@
 import type {
   ActivityPage,
+  Backup,
+  BackupMeta,
   AuthTokens,
   Device,
   EncryptedVaultItem,
@@ -98,6 +100,8 @@ export function createApiClient({
       me: () => request<User>('GET', '/users/me'),
       update: (displayName: string) => request<User>('PATCH', '/users/me', { displayName }),
       deleteAccount: () => request<void>('DELETE', '/users/me'),
+      /** "Download my data" (vault items stay encrypted). */
+      exportData: () => request<Record<string, unknown>>('GET', '/users/me/export'),
     },
     devices: {
       list: () => request<Device[]>('GET', '/devices'),
@@ -134,6 +138,18 @@ export function createApiClient({
           `/sync/${vaultId}?cursor=${encodeURIComponent(cursor ?? '')}`,
         ),
       push: (req: SyncPushRequest) => request<SyncPushResponse>('POST', '/sync', req),
+    },
+    backups: {
+      list: () => request<BackupMeta[]>('GET', '/backups'),
+      get: (id: string) => request<Backup>('GET', `/backups/${id}`),
+      create: (b: {
+        name: string;
+        ciphertext: string;
+        nonce: string;
+        kdf?: Record<string, unknown>;
+        itemCount?: number;
+      }) => request<BackupMeta>('POST', '/backups', b),
+      remove: (id: string) => request<void>('DELETE', `/backups/${id}`),
     },
     activity: {
       list: (before?: string, limit = 50) =>

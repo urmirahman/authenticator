@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Authenticator API
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Go API for the Authenticator app. The server never sees TOTP secrets: vault items are
     encrypted on the device (XChaCha20-Poly1305) and stored as opaque ciphertext.
@@ -18,6 +18,7 @@ tags:
   - name: vaults
   - name: sync
   - name: activity
+  - name: backups
 
 paths:
   /health:
@@ -249,6 +250,85 @@ paths:
       tags: [users]
       summary: Delete the account and everything in it (cascade)
       responses: { '204': { description: Deleted } }
+
+  /users/me/export:
+    get:
+      tags: [users]
+      summary: Download all your data as JSON (vault items and backups stay encrypted)
+      responses:
+        '200':
+          {
+            description: JSON attachment with user,
+            identities,
+            devices,
+            passkeys,
+            vaults,
+            vaultItems,
+            backups,
+            activity,
+          }
+
+  /backups:
+    get:
+      tags: [backups]
+      summary: List encrypted backups (metadata only)
+      responses:
+        '200':
+          {
+            description: OK,
+            content:
+              {
+                application/json:
+                  { schema: { type: array, items: { $ref: '#/components/schemas/BackupMeta' } } },
+              },
+          }
+    post:
+      tags: [backups]
+      summary: Upload an encrypted backup (max 5 MiB ciphertext, 20 per user)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, ciphertext, nonce]
+              properties:
+                name: { type: string, maxLength: 100 }
+                ciphertext: { type: string, format: byte }
+                nonce: { type: string, format: byte, description: 24 bytes }
+                kdf:
+                  {
+                    type: object,
+                    description: Public params to re-derive the backup key (salt,
+                    memory,
+                    ...),
+                  }
+                itemCount: { type: integer }
+      responses:
+        '201':
+          {
+            description: Created,
+            content: { application/json: { schema: { $ref: '#/components/schemas/BackupMeta' } } },
+          }
+        '400': { $ref: '#/components/responses/Error' }
+        '409': { description: Too many backups }
+  /backups/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get:
+      tags: [backups]
+      summary: Download one backup (with ciphertext)
+      responses:
+        '200':
+          {
+            description: OK,
+            content: { application/json: { schema: { $ref: '#/components/schemas/Backup' } } },
+          }
+        '404': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [backups]
+      summary: Delete a backup
+      responses:
+        { '204': { description: Deleted }, '404': { $ref: '#/components/responses/Error' } }
 
   /devices:
     get:
@@ -713,6 +793,22 @@ components:
         accepted: { type: array, items: { type: string, format: uuid } }
         conflicts: { type: array, items: { $ref: '#/components/schemas/Item' } }
         cursor: { type: string }
+    BackupMeta:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        kdf: { type: object }
+        itemCount: { type: integer }
+        sizeBytes: { type: integer }
+        createdAt: { type: string, format: date-time }
+    Backup:
+      allOf:
+        - $ref: '#/components/schemas/BackupMeta'
+        - type: object
+          properties:
+            ciphertext: { type: string, format: byte }
+            nonce: { type: string, format: byte }
     Event:
       type: object
       properties:

@@ -189,7 +189,31 @@ func TestIntegrationVaultSyncFlow(t *testing.T) {
 		t.Fatalf("activity: %+v", act)
 	}
 
-	// 8. another user can't see the vault
+	// 8. encrypted backup round trip + data export
+	var bk struct{ ID uuid.UUID }
+	if s := c.do("POST", "/backups", map[string]any{
+		"name": "Weekly", "ciphertext": make([]byte, 128), "nonce": make([]byte, 24),
+		"kdf": map[string]any{"algorithm": "argon2id"}, "itemCount": 1,
+	}, &bk); s != 201 {
+		t.Fatalf("create backup: %d", s)
+	}
+	var full struct{ Ciphertext []byte }
+	if s := c.do("GET", "/backups/"+bk.ID.String(), nil, &full); s != 200 || len(full.Ciphertext) != 128 {
+		t.Fatalf("get backup: %d len=%d", s, len(full.Ciphertext))
+	}
+	var exp struct {
+		VaultItems []any
+		Backups    []any
+		Passkeys   []any
+	}
+	if s := c.do("GET", "/users/me/export", nil, &exp); s != 200 || len(exp.VaultItems) != 1 || len(exp.Backups) != 1 || len(exp.Passkeys) != 1 {
+		t.Fatalf("export: %d %+v", s, exp)
+	}
+	if s := c.do("DELETE", "/backups/"+bk.ID.String(), nil, nil); s != 204 {
+		t.Fatalf("delete backup: %d", s)
+	}
+
+	// 9. another user can't see the vault
 	other := &client{t: t, base: c.base}
 	var tok2 struct{ AccessToken string }
 	other.do("POST", "/dev/token", map[string]string{"email": uuid.NewString() + "@test.local"}, &tok2)

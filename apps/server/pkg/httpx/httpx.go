@@ -36,8 +36,11 @@ func NotImplemented(w http.ResponseWriter) {
 }
 
 // Decode reads a JSON body (max 1 MB) and rejects unknown fields.
-func Decode(r *http.Request, dst any) error {
-	dec := json.NewDecoder(http.MaxBytesReader(nil, r.Body, 1<<20))
+func Decode(r *http.Request, dst any) error { return DecodeLimit(r, dst, 1<<20) }
+
+// DecodeLimit is Decode with a custom size limit in bytes (e.g. backups).
+func DecodeLimit(r *http.Request, dst any, limit int64) error {
+	dec := json.NewDecoder(http.MaxBytesReader(nil, r.Body, limit))
 	dec.DisallowUnknownFields()
 	return dec.Decode(dst)
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/urmirahman/authenticator/apps/server/internal/middleware"
 	"github.com/urmirahman/authenticator/apps/server/internal/modules/audit"
 	"github.com/urmirahman/authenticator/apps/server/internal/modules/auth"
+	"github.com/urmirahman/authenticator/apps/server/internal/modules/backups"
 	"github.com/urmirahman/authenticator/apps/server/internal/modules/dev"
 	"github.com/urmirahman/authenticator/apps/server/internal/modules/devices"
 	"github.com/urmirahman/authenticator/apps/server/internal/modules/passkeys"
@@ -78,7 +79,8 @@ func NewRouter(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *
 	authSvc := auth.NewService(auth.NewRepository(pool), issuer, auth.NewProviders(ctx, cfg), cfg.AllowedRedirects, cfg.RefreshTokenTTL)
 	authH := auth.NewHandler(authSvc, auditSvc)
 	passkeyH := passkeys.NewHandler(passkeys.NewService(wa, passkeys.NewRepository(q), authSvc), auditSvc)
-	usersH := users.NewHandler(users.NewService(users.NewRepository(q)))
+	usersH := users.NewHandler(users.NewService(users.NewRepository(q)), auditSvc)
+	backupsH := backups.NewHandler(backups.NewService(backups.NewRepository(q)), auditSvc)
 	devicesH := devices.NewHandler(devices.NewService(devices.NewRepository(pool)), auditSvc)
 	vaultH := vault.NewHandler(vault.NewService(vault.NewRepository(q)), auditSvc)
 	syncH := syncmod.NewHandler(syncmod.NewService(syncmod.NewRepository(pool)))
@@ -98,6 +100,7 @@ func NewRouter(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *
 			r.Route("/vaults", func(r chi.Router) { vaultH.Routes(r, syncH.ItemRoutes) })
 			r.Route("/sync", syncH.Routes)
 			r.Route("/activity", auditSvc.Routes)
+			r.Route("/backups", backupsH.Routes)
 		})
 	})
 	return r, nil

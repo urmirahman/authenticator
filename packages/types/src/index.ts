@@ -149,3 +149,17 @@ export interface ActivityPage {
   events: ActivityEvent[];
   next?: string;
 }
+
+export interface BackupMeta {
+  id: UUID;
+  name: string;
+  kdf: Record<string, unknown>;
+  itemCount: number;
+  sizeBytes: number;
+  createdAt: ISODate;
+}
+
+export interface Backup extends BackupMeta {
+  ciphertext: string; // base64
+  nonce: string; // base64
+}

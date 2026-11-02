@@ -13,6 +13,7 @@ type Repository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (db.User, error)
 	UpdateProfile(ctx context.Context, id uuid.UUID, displayName string) (db.User, error)
 	Delete(ctx context.Context, id uuid.UUID) error
+	Queries() *db.Queries // read-only export queries
 }
 
 type pgRepository struct{ q *db.Queries }
@@ -31,3 +32,5 @@ func (r *pgRepository) UpdateProfile(ctx context.Context, id uuid.UUID, displayN
 func (r *pgRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.q.DeleteUser(ctx, id)
 }
+
+func (r *pgRepository) Queries() *db.Queries { return r.q }
