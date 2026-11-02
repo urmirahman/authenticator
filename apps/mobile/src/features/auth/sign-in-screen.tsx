@@ -1,6 +1,9 @@
 import type { OAuthProvider } from '@repo/types';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Button, Input, Label, styles as ui } from '@/components/ui';
+import { api, completeSignIn, DEV_AUTH } from '@/lib/api';
 
 const PROVIDERS: Array<{ id: OAuthProvider; label: string }> = [
   { id: 'apple', label: 'Continue with Apple' },
@@ -9,35 +12,65 @@ const PROVIDERS: Array<{ id: OAuthProvider; label: string }> = [
 ];
 
 /**
- * Stubbed. Real flow: native SDK (expo-apple-authentication / Google Sign-In) returns an id_token,
- * then api.auth.exchangeIdToken(provider, idToken) gives us our own session.
+ * OAuth on mobile uses the native SDKs (expo-apple-authentication, Google Sign-In, Facebook SDK).
+ * They return an id_token / auth code, which we send to api.auth.nativeSignIn(provider, ...).
+ * Those SDKs need your provider app IDs, so the buttons are placeholders for now.
  */
 export function SignInScreen() {
+  const [email, setEmail] = useState('dev@example.com');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const devLogin = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await completeSignIn(await api.dev.token(email, email.split('@')[0]));
+      router.replace('/codes');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Sign-in failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Authenticator</Text>
-      <Pressable style={[styles.button, styles.primary]} onPress={() => router.replace('/codes')}>
-        <Text style={styles.primaryText}>Sign in with a passkey</Text>
-      </Pressable>
+    <View style={s.container}>
+      <Text style={s.title}>Authenticator</Text>
       {PROVIDERS.map((p) => (
-        <Pressable key={p.id} style={styles.button} onPress={() => router.replace('/codes')}>
-          <Text>{p.label}</Text>
-        </Pressable>
+        <Button
+          key={p.id}
+          variant="secondary"
+          title={p.label}
+          onPress={() =>
+            Alert.alert(
+              'Not configured yet',
+              `Add your ${p.id} app IDs first (docs/OAUTH_SETUP.md).`,
+            )
+          }
+        />
       ))}
+      {DEV_AUTH && (
+        <View style={s.dev}>
+          <Label>Dev login (DEV_AUTH only)</Label>
+          <Input value={email} onChangeText={setEmail} keyboardType="email-address" />
+          <Button title={busy ? 'Signing in…' : 'Dev sign in'} onPress={devLogin} disabled={busy} />
+        </View>
+      )}
+      {error && <Text style={ui.error}>{error}</Text>}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 24, gap: 12 },
   title: { fontSize: 28, fontWeight: '700', marginBottom: 16, textAlign: 'center' },
-  button: {
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    alignItems: 'center',
+  dev: {
+    gap: 8,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderColor: '#e2e8f0',
+    borderStyle: 'dashed',
   },
-  primary: { backgroundColor: '#4f46e5', borderColor: '#4f46e5' },
-  primaryText: { color: 'white', fontWeight: '600' },
 });

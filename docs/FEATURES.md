@@ -68,3 +68,17 @@ Google Authenticator parity plus extras. **Phase** = when it ships. **Status**: 
 | HOTP codes                                             | ✅ (tap Next, counter synced)                               |
 | Transfer-to-phone QR display                           | ✅ (/transfer, warning + reveal, auto-hide)                 |
 | Passkey rename                                         | ✅ (Settings)                                               |
+
+## Mobile app status (apps/mobile)
+
+| Feature                                                         | Status                                     |
+| --------------------------------------------------------------- | ------------------------------------------ |
+| Dev login, session in SecureStore                               | ✅                                         |
+| Apple / Google / Facebook native sign-in                        | ⬜ placeholders (need provider app IDs)    |
+| Master password setup + unlock                                  | ✅ (new mobile vaults use 19 MiB Argon2id) |
+| Code list, countdown, search, copy + clipboard clear, HOTP Next | ✅                                         |
+| Add via camera QR (incl. Google export QR) and manual key       | ✅                                         |
+| Sync (pull-to-refresh + every 30 s)                             | ✅                                         |
+| Biometric app lock, screenshot block, app-switcher cover        | ✅                                         |
+| Backups, devices, activity, change password, transfer on mobile | ⬜ (web has them)                          |
+| Passkeys on mobile                                              | ⬜                                         |
