@@ -7,3 +7,6 @@ export * from './base64';
 export * from './vault-codec';
 export * from './backup-codec';
 export * from './account-mapping';
+export * from './preferences';
+export * from './activity';
+export * from './folders';

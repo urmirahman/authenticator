@@ -1,34 +1,21 @@
 'use client';
 
+import { DEFAULT_PREFERENCES, parsePreferences, type Preferences } from '@repo/vault';
 import { useEffect, useSyncExternalStore } from 'react';
 
-/** Per-browser preferences. Nothing secret, so localStorage is fine. */
-export interface Settings {
-  /** Lock the vault after this many idle minutes (0 = never). */
-  autoLockMinutes: number;
-  /** Clear the clipboard this many seconds after copying a code (0 = never). */
-  clipboardClearSeconds: number;
-  theme: 'system' | 'light' | 'dark';
-}
+/** Per-browser preferences (shape + defaults shared with mobile in @repo/vault). */
+export type Settings = Preferences;
 
 const KEY = 'settings';
-export const DEFAULT_SETTINGS: Settings = {
-  autoLockMinutes: 5,
-  clipboardClearSeconds: 30,
-  theme: 'system',
-};
+export const DEFAULT_SETTINGS = DEFAULT_PREFERENCES;
 
 const listeners = new Set<() => void>();
 let cache: Settings | null = null;
 
 function read(): Settings {
   if (cache) return cache;
-  try {
-    cache = { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(KEY) ?? '{}') };
-  } catch {
-    cache = DEFAULT_SETTINGS;
-  }
-  return cache!;
+  cache = parsePreferences(localStorage.getItem(KEY));
+  return cache;
 }
 
 export function updateSettings(patch: Partial<Settings>) {
