@@ -1,13 +1,13 @@
 import { createApiClient } from '@repo/api-client';
 import { describe, expect, it } from 'vitest';
-import { decryptBackup, encryptBackup, type BackupKdf } from '@/features/backup/backup-codec';
+import { decryptBackup, encryptBackup, type BackupKdf } from '@repo/vault';
 import {
   createEnvelope,
   decryptItem,
   encryptItem,
   unlockEnvelope,
   wrapVaultKey,
-} from './vault-codec';
+} from '@repo/vault';
 
 /**
  * End-to-end check against a REAL running API (skipped by default).

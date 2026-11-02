@@ -5,7 +5,7 @@ import { Button } from '@repo/ui/button';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { PageTitle } from '@/components/ui';
-import { toImported } from '@/features/add-account/to-account-data';
+import { toImported } from '@repo/vault';
 import { useVault } from '@/features/vault/vault-context';
 
 /**

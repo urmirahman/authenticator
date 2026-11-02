@@ -4,7 +4,7 @@ import { issuerIcon, issuerInitials } from '@repo/importers';
 import { CountdownRing } from '@repo/ui/countdown-ring';
 import { useState } from 'react';
 import { useSettings } from '@/features/settings/settings';
-import type { AccountData, Decrypted, FolderData } from '@/features/vault/vault-codec';
+import type { AccountData, Decrypted, FolderData } from '@repo/vault';
 import { copyCode } from './copy';
 import { useVault } from '@/features/vault/vault-context';
 import { hotpCode, useTotp } from './use-totp';

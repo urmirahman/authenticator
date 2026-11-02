@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromBase64Url, toBase64Url } from './base64';
+import { fromBase64Url, toBase64Url } from '@repo/vault';
 import { credentialToJSON, parseCreationOptions, parseRequestOptions } from './webauthn-json';
 
 const bytes = (...n: number[]) => new Uint8Array(n);

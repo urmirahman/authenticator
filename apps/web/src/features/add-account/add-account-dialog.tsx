@@ -5,10 +5,10 @@ import { dedupe, importAny, type ImportedAccount } from '@repo/importers';
 import { Button } from '@repo/ui/button';
 import { useState, type FormEvent } from 'react';
 import { useVault } from '@/features/vault/vault-context';
-import type { AccountData, Decrypted } from '@/features/vault/vault-codec';
+import type { AccountData, Decrypted } from '@repo/vault';
 import { Dialog, Field, inputClass } from '@/components/ui';
 import { readQrFromFile } from './qr';
-import { toAccountData } from './to-account-data';
+import { toAccountData } from '@repo/vault';
 
 type Tab = 'manual' | 'qr' | 'paste';
 

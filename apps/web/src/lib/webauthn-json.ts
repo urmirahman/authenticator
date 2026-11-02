@@ -1,4 +1,4 @@
-import { fromBase64Url, toBase64Url } from './base64';
+import { fromBase64Url, toBase64Url } from '@repo/vault';
 
 /**
  * WebAuthn speaks ArrayBuffers, but JSON can only carry strings. The server (go-webauthn) sends

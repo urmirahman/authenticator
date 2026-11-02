@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { inputClass, PageTitle } from '@/components/ui';
 import { AddAccountDialog } from '@/features/add-account/add-account-dialog';
 import { CodeList } from '@/features/totp/code-list';
-import type { AccountData, Decrypted } from './vault-codec';
+import type { AccountData, Decrypted } from '@repo/vault';
 import { useVault } from './vault-context';
 
 const ALL = '__all';

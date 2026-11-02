@@ -23,7 +23,7 @@ import {
   type Decrypted,
   type FolderData,
   type ItemData,
-} from './vault-codec';
+} from '@repo/vault';
 
 /**
  * The vault "store": holds the unlocked key and decrypted items in memory, and talks to the API.

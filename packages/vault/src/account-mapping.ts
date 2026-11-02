@@ -1,5 +1,5 @@
 import type { ImportedAccount } from '@repo/importers';
-import type { AccountData } from '@/features/vault/vault-codec';
+import type { AccountData } from './vault-codec';
 
 /** Importers produce ImportedAccount; the vault stores AccountData. Same info, tiny mapping. */
 export function toAccountData(a: ImportedAccount, folderId?: string): AccountData {

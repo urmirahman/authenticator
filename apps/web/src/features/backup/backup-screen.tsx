@@ -6,10 +6,10 @@ import type { BackupMeta } from '@repo/types';
 import { Button } from '@repo/ui/button';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Field, inputClass, PageTitle } from '@/components/ui';
-import { toAccountData, toImported } from '@/features/add-account/to-account-data';
+import { toAccountData, toImported } from '@repo/vault';
 import { useVault } from '@/features/vault/vault-context';
 import { api } from '@/lib/api';
-import { decryptBackup, encryptBackup, type BackupKdf } from './backup-codec';
+import { decryptBackup, encryptBackup, type BackupKdf } from '@repo/vault';
 
 /** Let the "Working…" text paint before Argon2id blocks the main thread for ~1s. */
 const yieldToBrowser = () => new Promise((r) => setTimeout(r, 30));

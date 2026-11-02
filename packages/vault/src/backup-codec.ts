@@ -1,6 +1,6 @@
 import { nobleVaultCrypto, type KdfParams, type VaultCrypto } from '@repo/crypto';
 import type { ImportedAccount } from '@repo/importers';
-import { fromBase64, toBase64 } from '@/lib/base64';
+import { fromBase64, toBase64 } from './base64';
 
 /**
  * Encrypted backup file format (version 1). Separate password from the master password, so you

@@ -6,7 +6,7 @@ import {
   type VaultCrypto,
 } from '@repo/crypto';
 import type { EncryptedVaultItem, TotpAccount, Vault, VaultItemKind } from '@repo/types';
-import { fromBase64, toBase64 } from '@/lib/base64';
+import { fromBase64, toBase64 } from './base64';
 
 /**
  * Pure functions that turn passwords and plaintext into what the server stores, and back.
