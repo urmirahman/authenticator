@@ -7,13 +7,60 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
 
+const consumeChallenge = `-- name: ConsumeChallenge :one
+DELETE FROM webauthn_challenges WHERE id = $1 AND kind = $2 AND expires_at > now() RETURNING id, user_id, kind, session_data, expires_at, created_at
+`
+
+type ConsumeChallengeParams struct {
+	ID   uuid.UUID `json:"id"`
+	Kind string    `json:"kind"`
+}
+
+func (q *Queries) ConsumeChallenge(ctx context.Context, arg ConsumeChallengeParams) (WebauthnChallenge, error) {
+	row := q.db.QueryRow(ctx, consumeChallenge, arg.ID, arg.Kind)
+	var i WebauthnChallenge
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Kind,
+		&i.SessionData,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const createChallenge = `-- name: CreateChallenge :one
+INSERT INTO webauthn_challenges (user_id, kind, session_data, expires_at) VALUES ($1, $2, $3, $4) RETURNING id
+`
+
+type CreateChallengeParams struct {
+	UserID      uuid.NullUUID `json:"user_id"`
+	Kind        string        `json:"kind"`
+	SessionData []byte        `json:"session_data"`
+	ExpiresAt   time.Time     `json:"expires_at"`
+}
+
+func (q *Queries) CreateChallenge(ctx context.Context, arg CreateChallengeParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createChallenge,
+		arg.UserID,
+		arg.Kind,
+		arg.SessionData,
+		arg.ExpiresAt,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createPasskey = `-- name: CreatePasskey :one
-INSERT INTO passkey_credentials (user_id, credential_id, public_key, sign_count, aaguid, transports, backup_eligible, backup_state, name)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, user_id, credential_id, public_key, sign_count, aaguid, transports, backup_eligible, backup_state, name, created_at, last_used_at
+INSERT INTO passkey_credentials (user_id, credential_id, public_key, sign_count, aaguid, transports, backup_eligible, backup_state, name, credential)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, user_id, credential_id, public_key, sign_count, aaguid, transports, backup_eligible, backup_state, name, created_at, last_used_at, credential
 `
 
 type CreatePasskeyParams struct {
@@ -26,6 +73,7 @@ type CreatePasskeyParams struct {
 	BackupEligible bool      `json:"backup_eligible"`
 	BackupState    bool      `json:"backup_state"`
 	Name           string    `json:"name"`
+	Credential     []byte    `json:"credential"`
 }
 
 func (q *Queries) CreatePasskey(ctx context.Context, arg CreatePasskeyParams) (PasskeyCredential, error) {
@@ -39,6 +87,7 @@ func (q *Queries) CreatePasskey(ctx context.Context, arg CreatePasskeyParams) (P
 		arg.BackupEligible,
 		arg.BackupState,
 		arg.Name,
+		arg.Credential,
 	)
 	var i PasskeyCredential
 	err := row.Scan(
@@ -54,12 +103,55 @@ func (q *Queries) CreatePasskey(ctx context.Context, arg CreatePasskeyParams) (P
 		&i.Name,
 		&i.CreatedAt,
 		&i.LastUsedAt,
+		&i.Credential,
+	)
+	return i, err
+}
+
+const deletePasskey = `-- name: DeletePasskey :execrows
+DELETE FROM passkey_credentials WHERE id = $1 AND user_id = $2
+`
+
+type DeletePasskeyParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) DeletePasskey(ctx context.Context, arg DeletePasskeyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deletePasskey, arg.ID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const getPasskeyByCredentialID = `-- name: GetPasskeyByCredentialID :one
+SELECT id, user_id, credential_id, public_key, sign_count, aaguid, transports, backup_eligible, backup_state, name, created_at, last_used_at, credential FROM passkey_credentials WHERE credential_id = $1
+`
+
+func (q *Queries) GetPasskeyByCredentialID(ctx context.Context, credentialID []byte) (PasskeyCredential, error) {
+	row := q.db.QueryRow(ctx, getPasskeyByCredentialID, credentialID)
+	var i PasskeyCredential
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CredentialID,
+		&i.PublicKey,
+		&i.SignCount,
+		&i.Aaguid,
+		&i.Transports,
+		&i.BackupEligible,
+		&i.BackupState,
+		&i.Name,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.Credential,
 	)
 	return i, err
 }
 
 const listPasskeysByUser = `-- name: ListPasskeysByUser :many
-SELECT id, user_id, credential_id, public_key, sign_count, aaguid, transports, backup_eligible, backup_state, name, created_at, last_used_at FROM passkey_credentials WHERE user_id = $1
+SELECT id, user_id, credential_id, public_key, sign_count, aaguid, transports, backup_eligible, backup_state, name, created_at, last_used_at, credential FROM passkey_credentials WHERE user_id = $1 ORDER BY created_at
 `
 
 func (q *Queries) ListPasskeysByUser(ctx context.Context, userID uuid.UUID) ([]PasskeyCredential, error) {
@@ -84,6 +176,7 @@ func (q *Queries) ListPasskeysByUser(ctx context.Context, userID uuid.UUID) ([]P
 			&i.Name,
 			&i.CreatedAt,
 			&i.LastUsedAt,
+			&i.Credential,
 		); err != nil {
 			return nil, err
 		}
@@ -95,16 +188,43 @@ func (q *Queries) ListPasskeysByUser(ctx context.Context, userID uuid.UUID) ([]P
 	return items, nil
 }
 
-const updatePasskeySignCount = `-- name: UpdatePasskeySignCount :exec
-UPDATE passkey_credentials SET sign_count = $2, last_used_at = now() WHERE credential_id = $1
+const renamePasskey = `-- name: RenamePasskey :execrows
+UPDATE passkey_credentials SET name = $3 WHERE id = $1 AND user_id = $2
 `
 
-type UpdatePasskeySignCountParams struct {
-	CredentialID []byte `json:"credential_id"`
-	SignCount    int64  `json:"sign_count"`
+type RenamePasskeyParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+	Name   string    `json:"name"`
 }
 
-func (q *Queries) UpdatePasskeySignCount(ctx context.Context, arg UpdatePasskeySignCountParams) error {
-	_, err := q.db.Exec(ctx, updatePasskeySignCount, arg.CredentialID, arg.SignCount)
+func (q *Queries) RenamePasskey(ctx context.Context, arg RenamePasskeyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, renamePasskey, arg.ID, arg.UserID, arg.Name)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updatePasskeyAfterLogin = `-- name: UpdatePasskeyAfterLogin :exec
+UPDATE passkey_credentials
+SET sign_count = $2, backup_state = $3, credential = $4, last_used_at = now()
+WHERE credential_id = $1
+`
+
+type UpdatePasskeyAfterLoginParams struct {
+	CredentialID []byte `json:"credential_id"`
+	SignCount    int64  `json:"sign_count"`
+	BackupState  bool   `json:"backup_state"`
+	Credential   []byte `json:"credential"`
+}
+
+func (q *Queries) UpdatePasskeyAfterLogin(ctx context.Context, arg UpdatePasskeyAfterLoginParams) error {
+	_, err := q.db.Exec(ctx, updatePasskeyAfterLogin,
+		arg.CredentialID,
+		arg.SignCount,
+		arg.BackupState,
+		arg.Credential,
+	)
 	return err
 }

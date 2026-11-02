@@ -145,7 +145,51 @@ func TestIntegrationVaultSyncFlow(t *testing.T) {
 		t.Fatalf("incremental pull: %+v", pull)
 	}
 
-	// 6. another user can't see the vault
+	// 6. passkeys: register with a software authenticator, then sign in with it (no password, no OAuth)
+	soft := newSoftAuthenticator(t, "localhost", "http://localhost:3001")
+	var begin struct {
+		ChallengeID uuid.UUID      `json:"challengeId"`
+		Options     map[string]any `json:"options"`
+	}
+	if s := c.do("POST", "/passkeys/register/begin", nil, &begin); s != 200 {
+		t.Fatalf("register begin: %d", s)
+	}
+	var pk struct{ ID uuid.UUID }
+	if s := c.do("POST", "/passkeys/register/finish", map[string]any{
+		"challengeId": begin.ChallengeID, "credential": soft.Register(begin.Options), "name": "Test key",
+	}, &pk); s != 201 {
+		t.Fatalf("register finish: %d", s)
+	}
+	anon := &client{t: t, base: c.base}
+	if s := anon.do("POST", "/passkeys/login/begin", nil, &begin); s != 200 {
+		t.Fatalf("login begin: %d", s)
+	}
+	var ptok struct{ AccessToken string }
+	if s := anon.do("POST", "/passkeys/login/finish", map[string]any{
+		"challengeId": begin.ChallengeID, "credential": soft.Login(begin.Options),
+	}, &ptok); s != 200 || ptok.AccessToken == "" {
+		t.Fatalf("login finish: %d", s)
+	}
+	// replaying the same challenge must fail (one-time use)
+	if s := anon.do("POST", "/passkeys/login/finish", map[string]any{
+		"challengeId": begin.ChallengeID, "credential": soft.Login(begin.Options),
+	}, nil); s != 401 {
+		t.Fatalf("challenge replay should be 401, got %d", s)
+	}
+	if s := c.do("PATCH", "/passkeys/"+pk.ID.String(), map[string]string{"name": "Renamed"}, nil); s != 204 {
+		t.Fatalf("rename: %d", s)
+	}
+
+	// 7. activity log has the passkey events, newest first
+	var act struct {
+		Events []struct{ Action string }
+	}
+	c.do("GET", "/activity?limit=10", nil, &act)
+	if len(act.Events) < 3 || act.Events[0].Action != "auth.sign_in" {
+		t.Fatalf("activity: %+v", act)
+	}
+
+	// 8. another user can't see the vault
 	other := &client{t: t, base: c.base}
 	var tok2 struct{ AccessToken string }
 	other.do("POST", "/dev/token", map[string]string{"email": uuid.NewString() + "@test.local"}, &tok2)

@@ -35,3 +35,45 @@ func (q *Queries) InsertAudit(ctx context.Context, arg InsertAuditParams) error 
 	)
 	return err
 }
+
+const listAudit = `-- name: ListAudit :many
+SELECT id, user_id, action, ip, user_agent, metadata, created_at FROM audit_log
+WHERE user_id = $1 AND ($3::bigint = 0 OR id < $3::bigint)
+ORDER BY id DESC
+LIMIT $2
+`
+
+type ListAuditParams struct {
+	UserID   uuid.NullUUID `json:"user_id"`
+	Limit    int32         `json:"limit"`
+	BeforeID int64         `json:"before_id"`
+}
+
+// Keyset pagination: pass the last id you saw as before_id (0 = newest first page).
+func (q *Queries) ListAudit(ctx context.Context, arg ListAuditParams) ([]AuditLog, error) {
+	rows, err := q.db.Query(ctx, listAudit, arg.UserID, arg.Limit, arg.BeforeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AuditLog{}
+	for rows.Next() {
+		var i AuditLog
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Action,
+			&i.Ip,
+			&i.UserAgent,
+			&i.Metadata,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -6,12 +6,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/urmirahman/authenticator/apps/server/internal/modules/audit"
+
 	"github.com/urmirahman/authenticator/apps/server/pkg/httpx"
 )
 
-type Handler struct{ svc *Service }
+type Handler struct {
+	svc   *Service
+	audit audit.Recorder
+}
 
-func NewHandler(svc *Service) *Handler { return &Handler{svc: svc} }
+func NewHandler(svc *Service, rec audit.Recorder) *Handler { return &Handler{svc: svc, audit: rec} }
 
 // writeErr maps service errors to HTTP status codes in one place.
 func writeErr(w http.ResponseWriter, err error) {
@@ -70,6 +75,7 @@ func (h *Handler) exchange(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, err)
 		return
 	}
+	h.audit.Record(r, t.UserID, audit.SignIn, map[string]any{"method": "oauth_web"})
 	httpx.JSON(w, http.StatusOK, t)
 }
 
@@ -79,11 +85,13 @@ func (h *Handler) native(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "bad_request", err.Error())
 		return
 	}
-	t, err := h.svc.NativeSignIn(r.Context(), chi.URLParam(r, "provider"), req, meta(r))
+	provider := chi.URLParam(r, "provider")
+	t, err := h.svc.NativeSignIn(r.Context(), provider, req, meta(r))
 	if err != nil {
 		writeErr(w, err)
 		return
 	}
+	h.audit.Record(r, t.UserID, audit.SignIn, map[string]any{"method": "oauth_native", "provider": provider})
 	httpx.JSON(w, http.StatusOK, t)
 }
 

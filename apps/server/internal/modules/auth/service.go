@@ -250,7 +250,7 @@ func (s *Service) issue(ctx context.Context, userID, familyID uuid.UUID, meta Se
 	}); err != nil {
 		return Tokens{}, err
 	}
-	return Tokens{AccessToken: access, RefreshToken: raw, ExpiresIn: int(s.issuer.TTL().Seconds())}, nil
+	return Tokens{AccessToken: access, RefreshToken: raw, ExpiresIn: int(s.issuer.TTL().Seconds()), UserID: userID}, nil
 }
 
 func (s *Service) exchange(ctx context.Context, provider, code, verifier, redirectURI string) (*oauth2.Token, error) {

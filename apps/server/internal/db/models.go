@@ -73,6 +73,7 @@ type PasskeyCredential struct {
 	Name           string     `json:"name"`
 	CreatedAt      time.Time  `json:"created_at"`
 	LastUsedAt     *time.Time `json:"last_used_at"`
+	Credential     []byte     `json:"credential"`
 }
 
 type Session struct {
@@ -131,4 +132,13 @@ type VaultItem struct {
 	UpdatedAt       time.Time     `json:"updated_at"`
 	Kind            string        `json:"kind"`
 	UpdatedByDevice uuid.NullUUID `json:"updated_by_device"`
+}
+
+type WebauthnChallenge struct {
+	ID          uuid.UUID     `json:"id"`
+	UserID      uuid.NullUUID `json:"user_id"`
+	Kind        string        `json:"kind"`
+	SessionData []byte        `json:"session_data"`
+	ExpiresAt   time.Time     `json:"expires_at"`
+	CreatedAt   time.Time     `json:"created_at"`
 }

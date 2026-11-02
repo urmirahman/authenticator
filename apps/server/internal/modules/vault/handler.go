@@ -9,12 +9,16 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/urmirahman/authenticator/apps/server/internal/middleware"
+	"github.com/urmirahman/authenticator/apps/server/internal/modules/audit"
 	"github.com/urmirahman/authenticator/apps/server/pkg/httpx"
 )
 
-type Handler struct{ svc *Service }
+type Handler struct {
+	svc   *Service
+	audit audit.Recorder
+}
 
-func NewHandler(svc *Service) *Handler { return &Handler{svc: svc} }
+func NewHandler(svc *Service, rec audit.Recorder) *Handler { return &Handler{svc: svc, audit: rec} }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	vs, err := h.svc.List(r.Context(), middleware.UserID(r.Context()))
@@ -32,6 +36,9 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, err := h.svc.Create(r.Context(), middleware.UserID(r.Context()), req)
+	if err == nil {
+		h.audit.Record(r, middleware.UserID(r.Context()), audit.VaultCreated, map[string]any{"vaultId": v.ID})
+	}
 	writeVault(w, http.StatusCreated, v, err)
 }
 
@@ -70,5 +77,8 @@ func (h *Handler) rekey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, err := h.svc.Rekey(r.Context(), middleware.UserID(r.Context()), id, req)
+	if err == nil {
+		h.audit.Record(r, middleware.UserID(r.Context()), audit.VaultKeyChanged, map[string]any{"vaultId": id})
+	}
 	writeVault(w, http.StatusOK, v, err)
 }

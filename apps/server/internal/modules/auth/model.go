@@ -8,6 +8,8 @@ type Tokens struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
 	ExpiresIn    int    `json:"expiresIn"`
+
+	UserID uuid.UUID `json:"-"` // for audit logging; not sent to clients
 }
 
 type RefreshRequest struct {
