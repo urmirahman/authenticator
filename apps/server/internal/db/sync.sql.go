@@ -36,7 +36,7 @@ func (q *Queries) AppendChange(ctx context.Context, arg AppendChangeParams) (int
 }
 
 const getVaultItem = `-- name: GetVaultItem :one
-SELECT id, vault_id, ciphertext, nonce, version, deleted, created_at, updated_at FROM vault_items WHERE id = $1 AND vault_id = $2
+SELECT id, vault_id, ciphertext, nonce, version, deleted, created_at, updated_at, kind, updated_by_device FROM vault_items WHERE id = $1 AND vault_id = $2
 `
 
 type GetVaultItemParams struct {
@@ -56,92 +56,38 @@ func (q *Queries) GetVaultItem(ctx context.Context, arg GetVaultItemParams) (Vau
 		&i.Deleted,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Kind,
+		&i.UpdatedByDevice,
 	)
 	return i, err
 }
 
-const listChangesSince = `-- name: ListChangesSince :many
-SELECT c.seq, i.id, i.vault_id, i.ciphertext, i.nonce, i.version, i.deleted, i.updated_at
-FROM sync_changes c
-JOIN vault_items i ON i.id = c.item_id
-WHERE c.vault_id = $1 AND c.seq > $2
-ORDER BY c.seq
-LIMIT $3
+const insertVaultItem = `-- name: InsertVaultItem :one
+INSERT INTO vault_items (id, vault_id, kind, ciphertext, nonce, version, deleted, updated_by_device)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, vault_id, ciphertext, nonce, version, deleted, created_at, updated_at, kind, updated_by_device
 `
 
-type ListChangesSinceParams struct {
-	VaultID uuid.UUID `json:"vault_id"`
-	Seq     int64     `json:"seq"`
-	Limit   int32     `json:"limit"`
+type InsertVaultItemParams struct {
+	ID              uuid.UUID     `json:"id"`
+	VaultID         uuid.UUID     `json:"vault_id"`
+	Kind            string        `json:"kind"`
+	Ciphertext      []byte        `json:"ciphertext"`
+	Nonce           []byte        `json:"nonce"`
+	Version         int32         `json:"version"`
+	Deleted         bool          `json:"deleted"`
+	UpdatedByDevice uuid.NullUUID `json:"updated_by_device"`
 }
 
-type ListChangesSinceRow struct {
-	Seq        int64     `json:"seq"`
-	ID         uuid.UUID `json:"id"`
-	VaultID    uuid.UUID `json:"vault_id"`
-	Ciphertext []byte    `json:"ciphertext"`
-	Nonce      []byte    `json:"nonce"`
-	Version    int32     `json:"version"`
-	Deleted    bool      `json:"deleted"`
-	UpdatedAt  time.Time `json:"updated_at"`
-}
-
-func (q *Queries) ListChangesSince(ctx context.Context, arg ListChangesSinceParams) ([]ListChangesSinceRow, error) {
-	rows, err := q.db.Query(ctx, listChangesSince, arg.VaultID, arg.Seq, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListChangesSinceRow{}
-	for rows.Next() {
-		var i ListChangesSinceRow
-		if err := rows.Scan(
-			&i.Seq,
-			&i.ID,
-			&i.VaultID,
-			&i.Ciphertext,
-			&i.Nonce,
-			&i.Version,
-			&i.Deleted,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const upsertVaultItem = `-- name: UpsertVaultItem :one
-INSERT INTO vault_items (id, vault_id, ciphertext, nonce, version, deleted)
-VALUES ($1, $2, $3, $4, $5, $6)
-ON CONFLICT (id) DO UPDATE
-SET ciphertext = EXCLUDED.ciphertext, nonce = EXCLUDED.nonce, version = EXCLUDED.version,
-    deleted = EXCLUDED.deleted, updated_at = now()
-WHERE vault_items.version < EXCLUDED.version
-RETURNING id, vault_id, ciphertext, nonce, version, deleted, created_at, updated_at
-`
-
-type UpsertVaultItemParams struct {
-	ID         uuid.UUID `json:"id"`
-	VaultID    uuid.UUID `json:"vault_id"`
-	Ciphertext []byte    `json:"ciphertext"`
-	Nonce      []byte    `json:"nonce"`
-	Version    int32     `json:"version"`
-	Deleted    bool      `json:"deleted"`
-}
-
-func (q *Queries) UpsertVaultItem(ctx context.Context, arg UpsertVaultItemParams) (VaultItem, error) {
-	row := q.db.QueryRow(ctx, upsertVaultItem,
+func (q *Queries) InsertVaultItem(ctx context.Context, arg InsertVaultItemParams) (VaultItem, error) {
+	row := q.db.QueryRow(ctx, insertVaultItem,
 		arg.ID,
 		arg.VaultID,
+		arg.Kind,
 		arg.Ciphertext,
 		arg.Nonce,
 		arg.Version,
 		arg.Deleted,
+		arg.UpdatedByDevice,
 	)
 	var i VaultItem
 	err := row.Scan(
@@ -153,6 +99,176 @@ func (q *Queries) UpsertVaultItem(ctx context.Context, arg UpsertVaultItemParams
 		&i.Deleted,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Kind,
+		&i.UpdatedByDevice,
+	)
+	return i, err
+}
+
+const latestSeq = `-- name: LatestSeq :one
+SELECT coalesce(max(seq), 0)::bigint FROM sync_changes WHERE vault_id = $1
+`
+
+func (q *Queries) LatestSeq(ctx context.Context, vaultID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, latestSeq, vaultID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const listChangesSince = `-- name: ListChangesSince :many
+SELECT i.id, i.vault_id, i.kind, i.ciphertext, i.nonce, i.version, i.deleted, i.updated_at,
+       max(c.seq)::bigint AS seq
+FROM sync_changes c
+JOIN vault_items i ON i.id = c.item_id
+WHERE c.vault_id = $1 AND c.seq > $2
+GROUP BY i.id
+ORDER BY seq
+LIMIT $3
+`
+
+type ListChangesSinceParams struct {
+	VaultID uuid.UUID `json:"vault_id"`
+	Seq     int64     `json:"seq"`
+	Limit   int32     `json:"limit"`
+}
+
+type ListChangesSinceRow struct {
+	ID         uuid.UUID `json:"id"`
+	VaultID    uuid.UUID `json:"vault_id"`
+	Kind       string    `json:"kind"`
+	Ciphertext []byte    `json:"ciphertext"`
+	Nonce      []byte    `json:"nonce"`
+	Version    int32     `json:"version"`
+	Deleted    bool      `json:"deleted"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Seq        int64     `json:"seq"`
+}
+
+// Each item once, with the newest change seq for it; seq becomes the next cursor.
+func (q *Queries) ListChangesSince(ctx context.Context, arg ListChangesSinceParams) ([]ListChangesSinceRow, error) {
+	rows, err := q.db.Query(ctx, listChangesSince, arg.VaultID, arg.Seq, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListChangesSinceRow{}
+	for rows.Next() {
+		var i ListChangesSinceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.VaultID,
+			&i.Kind,
+			&i.Ciphertext,
+			&i.Nonce,
+			&i.Version,
+			&i.Deleted,
+			&i.UpdatedAt,
+			&i.Seq,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLiveItems = `-- name: ListLiveItems :many
+SELECT id, vault_id, ciphertext, nonce, version, deleted, created_at, updated_at, kind, updated_by_device FROM vault_items WHERE vault_id = $1 AND deleted = false ORDER BY created_at
+`
+
+func (q *Queries) ListLiveItems(ctx context.Context, vaultID uuid.UUID) ([]VaultItem, error) {
+	rows, err := q.db.Query(ctx, listLiveItems, vaultID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []VaultItem{}
+	for rows.Next() {
+		var i VaultItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.VaultID,
+			&i.Ciphertext,
+			&i.Nonce,
+			&i.Version,
+			&i.Deleted,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Kind,
+			&i.UpdatedByDevice,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockVaultItem = `-- name: LockVaultItem :one
+SELECT id, vault_id, ciphertext, nonce, version, deleted, created_at, updated_at, kind, updated_by_device FROM vault_items WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) LockVaultItem(ctx context.Context, id uuid.UUID) (VaultItem, error) {
+	row := q.db.QueryRow(ctx, lockVaultItem, id)
+	var i VaultItem
+	err := row.Scan(
+		&i.ID,
+		&i.VaultID,
+		&i.Ciphertext,
+		&i.Nonce,
+		&i.Version,
+		&i.Deleted,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Kind,
+		&i.UpdatedByDevice,
+	)
+	return i, err
+}
+
+const updateVaultItem = `-- name: UpdateVaultItem :one
+UPDATE vault_items
+SET ciphertext = $2, nonce = $3, version = $4, deleted = $5, updated_by_device = $6, updated_at = now()
+WHERE id = $1 RETURNING id, vault_id, ciphertext, nonce, version, deleted, created_at, updated_at, kind, updated_by_device
+`
+
+type UpdateVaultItemParams struct {
+	ID              uuid.UUID     `json:"id"`
+	Ciphertext      []byte        `json:"ciphertext"`
+	Nonce           []byte        `json:"nonce"`
+	Version         int32         `json:"version"`
+	Deleted         bool          `json:"deleted"`
+	UpdatedByDevice uuid.NullUUID `json:"updated_by_device"`
+}
+
+func (q *Queries) UpdateVaultItem(ctx context.Context, arg UpdateVaultItemParams) (VaultItem, error) {
+	row := q.db.QueryRow(ctx, updateVaultItem,
+		arg.ID,
+		arg.Ciphertext,
+		arg.Nonce,
+		arg.Version,
+		arg.Deleted,
+		arg.UpdatedByDevice,
+	)
+	var i VaultItem
+	err := row.Scan(
+		&i.ID,
+		&i.VaultID,
+		&i.Ciphertext,
+		&i.Nonce,
+		&i.Version,
+		&i.Deleted,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Kind,
+		&i.UpdatedByDevice,
 	)
 	return i, err
 }

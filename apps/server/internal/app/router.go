@@ -74,7 +74,7 @@ func NewRouter(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *
 	usersH := users.NewHandler(users.NewService(users.NewRepository(q)))
 	devicesH := devices.NewHandler(devices.NewService(devices.NewRepository(pool)))
 	vaultH := vault.NewHandler(vault.NewService(vault.NewRepository(q)))
-	syncH := syncmod.NewHandler(syncmod.NewService(syncmod.NewRepository(q)))
+	syncH := syncmod.NewHandler(syncmod.NewService(syncmod.NewRepository(pool)))
 
 	r := NewBaseRouter(cfg, log, pool)
 	r.Route("/v1", func(r chi.Router) {
@@ -88,7 +88,7 @@ func NewRouter(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *
 			r.Use(requireAuth)
 			r.Route("/users", usersH.Routes)
 			r.Route("/devices", devicesH.Routes)
-			r.Route("/vaults", vaultH.Routes)
+			r.Route("/vaults", func(r chi.Router) { vaultH.Routes(r, syncH.ItemRoutes) })
 			r.Route("/sync", syncH.Routes)
 		})
 	})

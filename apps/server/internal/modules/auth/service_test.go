@@ -37,7 +37,10 @@ func (f *fakeRepo) FindOrCreateUser(_ context.Context, p Profile) (uuid.UUID, er
 	f.users[k] = id
 	return id, nil
 }
-func (f *fakeRepo) SaveState(_ context.Context, s OAuthState) error { f.states[s.State] = s; return nil }
+func (f *fakeRepo) SaveState(_ context.Context, s OAuthState) error {
+	f.states[s.State] = s
+	return nil
+}
 func (f *fakeRepo) ConsumeState(_ context.Context, st, _ string) (OAuthState, error) {
 	s, ok := f.states[st]
 	if !ok {
@@ -81,7 +84,9 @@ type fakeVerifier struct {
 	err    error
 }
 
-func (v fakeVerifier) Verify(context.Context, string, string) (idtoken.Claims, error) { return v.claims, v.err }
+func (v fakeVerifier) Verify(context.Context, string, string) (idtoken.Claims, error) {
+	return v.claims, v.err
+}
 
 type fakeFacebook struct{}
 

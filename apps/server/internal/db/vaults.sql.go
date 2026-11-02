@@ -118,3 +118,47 @@ func (q *Queries) ListVaults(ctx context.Context, userID uuid.UUID) ([]Vault, er
 	}
 	return items, nil
 }
+
+const updateVaultKey = `-- name: UpdateVaultKey :one
+UPDATE vaults
+SET kdf_salt = $3, kdf_memory_kib = $4, kdf_iterations = $5, kdf_parallelism = $6, wrapped_key = $7, updated_at = now()
+WHERE id = $1 AND user_id = $2
+RETURNING id, user_id, name, kdf_algorithm, kdf_salt, kdf_memory_kib, kdf_iterations, kdf_parallelism, wrapped_key, created_at, updated_at
+`
+
+type UpdateVaultKeyParams struct {
+	ID             uuid.UUID `json:"id"`
+	UserID         uuid.UUID `json:"user_id"`
+	KdfSalt        []byte    `json:"kdf_salt"`
+	KdfMemoryKib   int32     `json:"kdf_memory_kib"`
+	KdfIterations  int32     `json:"kdf_iterations"`
+	KdfParallelism int32     `json:"kdf_parallelism"`
+	WrappedKey     []byte    `json:"wrapped_key"`
+}
+
+func (q *Queries) UpdateVaultKey(ctx context.Context, arg UpdateVaultKeyParams) (Vault, error) {
+	row := q.db.QueryRow(ctx, updateVaultKey,
+		arg.ID,
+		arg.UserID,
+		arg.KdfSalt,
+		arg.KdfMemoryKib,
+		arg.KdfIterations,
+		arg.KdfParallelism,
+		arg.WrappedKey,
+	)
+	var i Vault
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.KdfAlgorithm,
+		&i.KdfSalt,
+		&i.KdfMemoryKib,
+		&i.KdfIterations,
+		&i.KdfParallelism,
+		&i.WrappedKey,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

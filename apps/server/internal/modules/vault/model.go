@@ -38,3 +38,9 @@ func fromDB(v db.Vault) Vault {
 		KDF: KDF{Algorithm: v.KdfAlgorithm, Salt: v.KdfSalt, MemoryKiB: v.KdfMemoryKib, Iterations: v.KdfIterations, Parallelism: v.KdfParallelism},
 	}
 }
+
+// RekeyRequest is sent after a master-password change: same vault key, new KDF salt + wrapping.
+type RekeyRequest struct {
+	KDF        KDF    `json:"kdf"`
+	WrappedKey []byte `json:"wrappedKey"`
+}

@@ -7,3 +7,9 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
 
 -- name: GetVaultForUser :one
 SELECT * FROM vaults WHERE id = $1 AND user_id = $2;
+
+-- name: UpdateVaultKey :one
+UPDATE vaults
+SET kdf_salt = $3, kdf_memory_kib = $4, kdf_iterations = $5, kdf_parallelism = $6, wrapped_key = $7, updated_at = now()
+WHERE id = $1 AND user_id = $2
+RETURNING *;

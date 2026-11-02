@@ -121,12 +121,14 @@ type Vault struct {
 }
 
 type VaultItem struct {
-	ID         uuid.UUID `json:"id"`
-	VaultID    uuid.UUID `json:"vault_id"`
-	Ciphertext []byte    `json:"ciphertext"`
-	Nonce      []byte    `json:"nonce"`
-	Version    int32     `json:"version"`
-	Deleted    bool      `json:"deleted"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID              uuid.UUID     `json:"id"`
+	VaultID         uuid.UUID     `json:"vault_id"`
+	Ciphertext      []byte        `json:"ciphertext"`
+	Nonce           []byte        `json:"nonce"`
+	Version         int32         `json:"version"`
+	Deleted         bool          `json:"deleted"`
+	CreatedAt       time.Time     `json:"created_at"`
+	UpdatedAt       time.Time     `json:"updated_at"`
+	Kind            string        `json:"kind"`
+	UpdatedByDevice uuid.NullUUID `json:"updated_by_device"`
 }
