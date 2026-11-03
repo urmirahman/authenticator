@@ -15,6 +15,7 @@ import { signOutGoogle } from '@/features/auth/google-sign-in';
 import { clearBiometricKey } from '@/features/security/biometric-key';
 import { useVault } from '@/features/vault/vault-store';
 import { api, signOut } from '@/lib/api';
+import { DeleteAccount } from './delete-account';
 import { usePreferences } from './preferences';
 
 const LINKS: Array<{ href: Href; label: string }> = [
@@ -22,6 +23,7 @@ const LINKS: Array<{ href: Href; label: string }> = [
   { href: '/transfer', label: 'Transfer to another phone' },
   { href: '/devices', label: 'Devices' },
   { href: '/activity', label: 'Activity log' },
+  { href: '/help', label: 'Help, privacy & about' },
 ];
 
 function ChangePassword() {
@@ -83,7 +85,7 @@ export function SettingsScreen() {
   /** "Download my data": write the JSON to a temp file and open the share sheet. */
   const exportData = async () => {
     const data = await api.users.exportData();
-    const file = new File(Paths.cache, 'authenticator-export.json');
+    const file = new File(Paths.cache, 'bloom-export.json');
     file.write(JSON.stringify(data, null, 2));
     await Sharing.shareAsync(file.uri, { mimeType: 'application/json' });
   };
@@ -95,6 +97,8 @@ export function SettingsScreen() {
           key={l.label}
           style={[s.link, { backgroundColor: c.card }]}
           onPress={() => router.push(l.href)}
+          accessibilityRole="link"
+          accessibilityLabel={l.label}
         >
           <Text style={{ color: c.text }}>{l.label}</Text>
           <Text style={{ color: c.muted }}>›</Text>
@@ -171,6 +175,7 @@ export function SettingsScreen() {
           router.replace('/sign-in');
         }}
       />
+      <DeleteAccount />
     </Screen>
   );
 }

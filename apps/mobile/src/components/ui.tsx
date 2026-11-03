@@ -1,3 +1,4 @@
+import { ink, radius, semantic, space } from '@repo/brand';
 import type { ReactNode } from 'react';
 import {
   Pressable,
@@ -28,17 +29,20 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: !!disabled }}
       style={[
         styles.button,
         variant === 'primary' && { backgroundColor: c.accent },
         variant === 'secondary' && { borderWidth: 1, borderColor: c.border },
-        variant === 'danger' && { borderWidth: 1, borderColor: '#dc2626' },
+        variant === 'danger' && { borderWidth: 1, borderColor: c.danger },
         disabled && styles.disabled,
       ]}
     >
       <Text
         style={{
-          color: variant === 'primary' ? 'white' : variant === 'danger' ? '#dc2626' : c.text,
+          color: variant === 'primary' ? c.accentText : variant === 'danger' ? c.danger : c.text,
           fontWeight: '600',
         }}
       >
@@ -108,6 +112,9 @@ export function Choice<T extends string | number>({
         <Pressable
           key={String(o)}
           onPress={() => onChange(o)}
+          accessibilityRole="radio"
+          accessibilityState={{ selected: o === value }}
+          accessibilityLabel={label(o)}
           style={[
             styles.pill,
             { borderColor: c.border },
@@ -127,13 +134,25 @@ export function Muted({ children }: { children: ReactNode }) {
 }
 
 export const styles = StyleSheet.create({
-  button: { padding: 14, borderRadius: 12, alignItems: 'center' },
+  button: {
+    minHeight: 48,
+    padding: space.md + 2,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   disabled: { opacity: 0.5 },
-  input: { borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 16 },
-  label: { fontSize: 12, color: '#64748b', marginBottom: 4 },
-  error: { color: '#dc2626' },
-  screen: { padding: 16, gap: 12 },
-  section: { borderRadius: 16, padding: 16, gap: 10 },
+  input: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: space.md,
+    fontSize: 16,
+  },
+  label: { fontSize: 12, color: ink[500], marginBottom: 4 },
+  error: { color: semantic.danger },
+  screen: { padding: space.lg, gap: space.md, width: '100%', maxWidth: 640, alignSelf: 'center' },
+  section: { borderRadius: radius.lg, padding: space.lg, gap: space.sm + 2 },
   sectionTitle: { fontSize: 16, fontWeight: '600' },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },

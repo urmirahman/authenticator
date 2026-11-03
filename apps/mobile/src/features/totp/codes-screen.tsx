@@ -1,3 +1,4 @@
+import { ink, rose, semantic } from '@repo/brand';
 import { base32Decode, hotp, secondsRemaining, totp } from '@repo/crypto';
 import { issuerIcon, issuerInitials } from '@repo/importers';
 import {
@@ -56,7 +57,7 @@ function Badge({ issuer }: { issuer: string }) {
   const icon = issuerIcon(issuer);
   return (
     <View
-      style={[s.badge, { backgroundColor: icon ? `#${icon.color.replace('#', '')}` : '#64748b' }]}
+      style={[s.badge, { backgroundColor: icon ? `#${icon.color.replace('#', '')}` : ink[500] }]}
     >
       <Text style={s.badgeText}>{issuerInitials(issuer || '?')}</Text>
     </View>
@@ -87,6 +88,13 @@ function CodeRow({ item, now }: { item: Decrypted<AccountData>; now: number }) {
       style={[s.row, { backgroundColor: c.card }]}
       onPress={copy}
       onLongPress={() => router.push({ pathname: '/edit-account', params: { id: item.id } })}
+      accessibilityRole="button"
+      accessibilityLabel={`${a.issuer || a.label}, code ${code.split('').join(' ')}`}
+      accessibilityHint="Tap to copy. Long press to edit."
+      accessibilityActions={[{ name: 'longpress', label: 'Edit account' }]}
+      onAccessibilityAction={() =>
+        router.push({ pathname: '/edit-account', params: { id: item.id } })
+      }
     >
       <Badge issuer={a.issuer || a.label} />
       <View style={s.flex}>
@@ -139,6 +147,10 @@ export function CodesScreen() {
       key={id}
       onPress={() => setFolder(id)}
       onLongPress={onLongPress}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: folder === id }}
+      accessibilityLabel={`Folder ${label}`}
+      accessibilityHint={onLongPress ? 'Long press to rename or delete' : undefined}
       style={[
         s.chip,
         { borderColor: c.border },
@@ -219,7 +231,7 @@ export function CodesScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, padding: 16, width: '100%', maxWidth: 720, alignSelf: 'center' },
   search: { marginBottom: 10 },
   chips: { gap: 8, paddingBottom: 12 },
   chip: {
@@ -247,16 +259,16 @@ const s = StyleSheet.create({
   },
   badgeText: { color: 'white', fontWeight: '600' },
   code: { fontSize: 28, fontVariant: ['tabular-nums'], letterSpacing: 2 },
-  copied: { color: '#059669', fontSize: 12 },
+  copied: { color: semantic.success, fontSize: 12 },
   next: {
     borderWidth: 1,
-    borderColor: '#c7d2fe',
+    borderColor: rose[200],
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   empty: { textAlign: 'center', marginTop: 40 },
   hint: { textAlign: 'center', fontSize: 12, marginTop: 8 },
-  error: { color: '#dc2626', textAlign: 'center' },
+  error: { color: semantic.danger, textAlign: 'center' },
   links: { flexDirection: 'row', justifyContent: 'space-around', padding: 16 },
 });

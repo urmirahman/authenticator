@@ -9,23 +9,43 @@ export const reversedClientId = (id: string) => id.split('.').reverse().join('.'
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'Authenticator',
+  // User-facing brand name (docs/BRAND.md). slug/scheme/bundle id stay as-is: OAuth clients depend on them.
+  name: 'Bloom',
   slug: 'authenticator',
   scheme: 'authenticator',
   version: '0.1.0',
-  orientation: 'portrait',
+  // Phones, tablets and landscape are all supported (layouts cap content width).
+  orientation: 'default',
+  icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   ios: {
     bundleIdentifier: 'dev.urmirahman.authenticator',
-    supportsTablet: false,
+    supportsTablet: true,
+    infoPlist: { CFBundleDisplayName: 'Bloom' },
     usesAppleSignIn: true,
     // Passkeys need an associated domain that serves apple-app-site-association.
     associatedDomains: ['webcredentials:auth.example.com'],
   },
-  android: { package: 'dev.urmirahman.authenticator' },
+  android: {
+    package: 'dev.urmirahman.authenticator',
+    adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#fff1f4' },
+  },
   plugins: [
     'expo-router',
     'expo-secure-store',
+    [
+      'expo-splash-screen',
+      {
+        image: './assets/splash-icon.png',
+        imageWidth: 180,
+        backgroundColor: '#faf8f7',
+        dark: { image: './assets/splash-icon.png', backgroundColor: '#0f0d11' },
+      },
+    ],
+    [
+      'expo-local-authentication',
+      { faceIDPermission: 'Allow Bloom to use Face ID to unlock your vault.' },
+    ],
     // Only added when an iOS client id exists; otherwise the plugin would fail the build.
     ...(googleIosClientId
       ? [
@@ -35,8 +55,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           ] as [string, object],
         ]
       : []),
-    ['expo-camera', { cameraPermission: 'Allow Authenticator to scan QR codes to add accounts.' }],
+    ['expo-camera', { cameraPermission: 'Allow Bloom to scan QR codes to add accounts.' }],
   ],
   experiments: { typedRoutes: true },
-  extra: { apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787' },
+  extra: {
+    webUrl: process.env.EXPO_PUBLIC_WEB_URL ?? 'http://localhost:3001',
+    apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787',
+  },
 });

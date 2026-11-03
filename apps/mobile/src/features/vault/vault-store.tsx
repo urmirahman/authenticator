@@ -51,6 +51,8 @@ interface VaultState {
   load(): Promise<void>;
   setup(password: string): Promise<void>;
   unlock(password: string): Promise<void>;
+  /** True if the password opens the vault envelope (doesn't change state). */
+  verifyPassword(password: string): Promise<boolean>;
   lock(): void;
   changePassword(current: string, next: string): Promise<void>;
   biometric: { available: boolean; enabled: boolean };
@@ -213,6 +215,16 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     [afterUnlock],
   );
 
+  const verifyPassword = useCallback(async (password: string) => {
+    if (!vault.current) return false;
+    try {
+      (await unlockEnvelope(password, vault.current)).fill(0);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const lock = useCallback(() => {
     key.current?.fill(0);
     key.current = null;
@@ -275,6 +287,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       load,
       setup,
       unlock,
+      verifyPassword,
       lock,
       changePassword,
       biometric,
@@ -292,6 +305,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     load,
     setup,
     unlock,
+    verifyPassword,
     lock,
     changePassword,
     biometric,

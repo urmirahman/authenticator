@@ -1,3 +1,4 @@
+import { ink } from '@repo/brand';
 import type { OAuthProvider } from '@repo/types';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -86,7 +87,7 @@ const s = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: ink[200],
     borderStyle: 'dashed',
   },
 });

@@ -1,3 +1,4 @@
+import { ink, rose } from '@repo/brand';
 import { toGoogleMigration } from '@repo/importers';
 import { qrCountFor, toImported } from '@repo/vault';
 import { useEffect, useMemo, useState } from 'react';
@@ -117,7 +118,13 @@ const s = StyleSheet.create({
   qr: { alignSelf: 'center', padding: 16, backgroundColor: 'white', borderRadius: 16 },
   row: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
   flex: { flex: 1 },
-  warning: { backgroundColor: '#fef3c7', borderRadius: 12, padding: 12 },
-  warningText: { color: '#78350f' },
+  warning: {
+    backgroundColor: rose[50],
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: rose[200],
+  },
+  warningText: { color: ink[900] },
   item: { padding: 12, borderRadius: 10 },
 });

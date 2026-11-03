@@ -1,12 +1,14 @@
 import { router, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { useColors } from '@/components/theme';
 import { UnlockScreen } from '@/features/vault/unlock-screen';
 import { useVault } from '@/features/vault/vault-store';
 
 /** Signed-in area: loads the vault header, and shows the unlock screen until the key is in memory. */
 export default function AppLayout() {
   const vault = useVault();
+  const c = useColors();
 
   useEffect(() => {
     if (vault.status === 'loading') vault.load().catch(() => router.replace('/sign-in'));
@@ -28,7 +30,14 @@ export default function AppLayout() {
   }
   if (vault.status !== 'unlocked') return <UnlockScreen />;
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerTintColor: c.accent,
+        headerStyle: { backgroundColor: c.bg },
+        headerTitleStyle: { color: c.text },
+        contentStyle: { backgroundColor: c.bg },
+      }}
+    >
       <Stack.Screen name="codes" options={{ title: 'Codes' }} />
       <Stack.Screen name="add-account" options={{ title: 'Add account', presentation: 'modal' }} />
       <Stack.Screen name="settings" options={{ title: 'Settings' }} />
@@ -40,6 +49,7 @@ export default function AppLayout() {
       <Stack.Screen name="transfer" options={{ title: 'Transfer' }} />
       <Stack.Screen name="devices" options={{ title: 'Devices' }} />
       <Stack.Screen name="activity" options={{ title: 'Activity' }} />
+      <Stack.Screen name="help" options={{ title: 'Help & about' }} />
     </Stack>
   );
 }

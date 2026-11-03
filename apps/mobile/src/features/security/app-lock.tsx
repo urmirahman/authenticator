@@ -1,7 +1,9 @@
+import { logoMark } from '@/components/brand-images';
+import { dark } from '@repo/brand';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { usePreventScreenCapture } from 'expo-screen-capture';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { usePreferences } from '@/features/settings/preferences';
 import { useVault } from '@/features/vault/vault-store';
 
@@ -64,9 +66,14 @@ export function AppLock({ children }: { children: ReactNode }) {
       {children}
       {(covered || needsBiometric) && (
         <View style={styles.cover}>
-          <Text style={styles.lockIcon}>🔐</Text>
+          <Image source={logoMark} style={styles.logo} accessibilityLabel="Bloom is locked" />
           {needsBiometric && !covered && (
-            <Pressable style={styles.button} onPress={authenticate}>
+            <Pressable
+              style={styles.button}
+              onPress={authenticate}
+              accessibilityRole="button"
+              accessibilityLabel="Unlock with Face ID or fingerprint"
+            >
               <Text style={styles.buttonText}>Unlock</Text>
             </Pressable>
           )}
@@ -80,17 +87,17 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   cover: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#0f172a',
+    backgroundColor: dark.bg,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 24,
   },
-  lockIcon: { fontSize: 48 },
+  logo: { width: 120, height: 120 },
   button: {
-    backgroundColor: '#4f46e5',
+    backgroundColor: dark.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
-  buttonText: { color: 'white', fontWeight: '600' },
+  buttonText: { color: dark.accentText, fontWeight: '600' },
 });
