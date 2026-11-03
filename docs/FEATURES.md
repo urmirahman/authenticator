@@ -74,7 +74,8 @@ Google Authenticator parity plus extras. **Phase** = when it ships. **Status**: 
 | Feature                                                                               | Status                                     |
 | ------------------------------------------------------------------------------------- | ------------------------------------------ |
 | Dev login, session in SecureStore                                                     | ✅                                         |
-| Apple / Google / Facebook native sign-in                                              | ⬜ placeholders (need provider app IDs)    |
+| Google native sign-in                                                                 | ✅ iOS (Android once its client id exists) |
+| Apple / Facebook native sign-in                                                       | ⬜ placeholders (need provider app IDs)    |
 | Master password setup + unlock                                                        | ✅ (new mobile vaults use 19 MiB Argon2id) |
 | Biometric unlock (opt-in, ADR 32)                                                     | ✅                                         |
 | Code list, countdown, search, copy + clipboard clear, HOTP Next, issuer colors        | ✅                                         |
