@@ -1,15 +1,16 @@
-import { ink, rose, semantic } from '@repo/brand';
+import { Ionicons } from '@expo/vector-icons';
 import { base32Decode, hotp, secondsRemaining, totp } from '@repo/crypto';
 import { issuerIcon, issuerInitials } from '@repo/importers';
 import {
   accountsInFolder,
   ALL_FOLDERS,
   filterAccounts,
+  formatCode,
   type AccountData,
   type Decrypted,
 } from '@repo/vault';
 import * as Clipboard from 'expo-clipboard';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -21,9 +22,11 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Prompt } from '@/components/prompt';
 import { useColors } from '@/components/theme';
-import { Button, Input } from '@/components/ui';
+import { Button, EmptyState, FadeIn, Input, monoFont, Title } from '@/components/ui';
+import { useHaptics } from '@/lib/motion';
 import { usePreferences } from '@/features/settings/preferences';
 import { useVault } from '@/features/vault/vault-store';
 import { CountdownRing } from './countdown-ring';
@@ -54,12 +57,14 @@ function codeFor(a: AccountData, now: number) {
 }
 
 function Badge({ issuer }: { issuer: string }) {
+  const c = useColors();
   const icon = issuerIcon(issuer);
+  const color = icon ? `#${icon.color.replace('#', '')}` : c.accent;
   return (
-    <View
-      style={[s.badge, { backgroundColor: icon ? `#${icon.color.replace('#', '')}` : ink[500] }]}
-    >
-      <Text style={s.badgeText}>{issuerInitials(issuer || '?')}</Text>
+    <View style={[s.badge, { backgroundColor: icon ? color : c.accentSoft }]}>
+      <Text style={[s.badgeText, { color: icon ? 'white' : c.accent }]}>
+        {issuerInitials(issuer || '?')}
+      </Text>
     </View>
   );
 }
@@ -67,13 +72,19 @@ function Badge({ issuer }: { issuer: string }) {
 function CodeRow({ item, now }: { item: Decrypted<AccountData>; now: number }) {
   const vault = useVault();
   const c = useColors();
-  const { clipboardClearSeconds } = usePreferences();
+  const haptic = useHaptics();
+  const { clipboardClearSeconds, groupDigits, codeSize, showNextCode } = usePreferences();
   const a = item.data;
   const code = codeFor(a, now);
+  const remaining = a.type === 'hotp' ? 0 : secondsRemaining(a.period, now);
+  const next =
+    showNextCode && a.type !== 'hotp' && remaining <= 10 ? codeFor(a, now + a.period * 1000) : null;
   const [copied, setCopied] = useState(false);
+  const edit = () => router.push({ pathname: '/edit-account', params: { id: item.id } });
 
   const copy = async () => {
     await Clipboard.setStringAsync(code);
+    haptic('success');
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
     if (clipboardClearSeconds > 0) {
@@ -85,34 +96,69 @@ function CodeRow({ item, now }: { item: Decrypted<AccountData>; now: number }) {
 
   return (
     <Pressable
-      style={[s.row, { backgroundColor: c.card }]}
+      style={({ pressed }) => [
+        s.row,
+        { backgroundColor: c.surface, borderColor: copied ? c.accent : c.border },
+        pressed && { transform: [{ scale: 0.985 }] },
+      ]}
       onPress={copy}
-      onLongPress={() => router.push({ pathname: '/edit-account', params: { id: item.id } })}
+      onLongPress={() => {
+        haptic('tap');
+        edit();
+      }}
       accessibilityRole="button"
-      accessibilityLabel={`${a.issuer || a.label}, code ${code.split('').join(' ')}`}
+      accessibilityLabel={`${a.issuer || a.label}, ${a.label}, code ${code.split('').join(' ')}${
+        remaining ? `, ${remaining} seconds left` : ''
+      }`}
       accessibilityHint="Tap to copy. Long press to edit."
       accessibilityActions={[{ name: 'longpress', label: 'Edit account' }]}
-      onAccessibilityAction={() =>
-        router.push({ pathname: '/edit-account', params: { id: item.id } })
-      }
+      onAccessibilityAction={edit}
     >
       <Badge issuer={a.issuer || a.label} />
       <View style={s.flex}>
-        <Text style={{ color: c.muted }} numberOfLines={1}>
-          {a.issuer} · {a.label}
+        <Text style={[s.issuer, { color: c.text }]} numberOfLines={1}>
+          {a.issuer || a.label}
         </Text>
-        <Text style={[s.code, { color: c.text }]}>{code.replace(/(\d{3})(?=\d)/g, '$1 ')}</Text>
-        {copied && <Text style={s.copied}>Copied</Text>}
+        {!!a.issuer && (
+          <Text style={{ color: c.muted, fontSize: 13 }} numberOfLines={1}>
+            {a.label}
+          </Text>
+        )}
+        <Text
+          style={[
+            s.code,
+            codeSize === 'compact' && s.codeCompact,
+            { color: remaining > 0 && remaining <= 5 ? c.danger : c.accent },
+          ]}
+          maxFontSizeMultiplier={1.6}
+        >
+          {formatCode(code, groupDigits)}
+        </Text>
+        {copied ? (
+          <Text style={{ color: c.success, fontSize: 13, fontWeight: '600' }}>
+            Copied — paste it in ✿
+          </Text>
+        ) : next ? (
+          <Text style={{ color: c.muted, fontSize: 13 }}>Next {formatCode(next, groupDigits)}</Text>
+        ) : null}
       </View>
       {a.type === 'hotp' ? (
         <Pressable
-          style={s.next}
-          onPress={() => vault.save('account', { ...a, counter: (a.counter ?? 0) + 1 }, item.id)}
+          style={[s.next, { backgroundColor: c.accentSoft }]}
+          onPress={() => {
+            haptic('tap');
+            vault.save('account', { ...a, counter: (a.counter ?? 0) + 1 }, item.id);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Generate next code"
         >
-          <Text style={{ color: c.accent }}>Next</Text>
+          <Ionicons name="refresh" size={18} color={c.accent} />
         </Pressable>
       ) : (
-        <CountdownRing remaining={secondsRemaining(a.period, now)} period={a.period} />
+        <View style={s.ringWrap}>
+          <CountdownRing remaining={remaining} period={a.period} size={36} />
+          <Text style={[s.ringText, { color: c.muted }]}>{remaining}</Text>
+        </View>
       )}
     </Pressable>
   );
@@ -121,6 +167,8 @@ function CodeRow({ item, now }: { item: Decrypted<AccountData>; now: number }) {
 export function CodesScreen() {
   const vault = useVault();
   const c = useColors();
+  const haptic = useHaptics();
+  const insets = useSafeAreaInsets();
   const now = useNow();
   const [query, setQuery] = useState('');
   const [folder, setFolder] = useState(ALL_FOLDERS);
@@ -145,60 +193,132 @@ export function CodesScreen() {
   const chip = (id: string, label: string, onLongPress?: () => void) => (
     <Pressable
       key={id}
-      onPress={() => setFolder(id)}
+      onPress={() => {
+        haptic('tap');
+        setFolder(id);
+      }}
       onLongPress={onLongPress}
       accessibilityRole="tab"
       accessibilityState={{ selected: folder === id }}
       accessibilityLabel={`Folder ${label}`}
       accessibilityHint={onLongPress ? 'Long press to rename or delete' : undefined}
-      style={[
-        s.chip,
-        { borderColor: c.border },
-        folder === id && { backgroundColor: c.accent, borderColor: c.accent },
-      ]}
+      style={[s.chip, { backgroundColor: folder === id ? c.accent : c.surfaceMuted }]}
     >
-      <Text style={{ color: folder === id ? 'white' : c.text }}>{label}</Text>
+      <Text style={{ color: folder === id ? c.accentText : c.text, fontWeight: '500' }}>
+        {label}
+      </Text>
     </Pressable>
   );
 
+  const header = (
+    <View style={{ gap: 12, marginBottom: 8 }}>
+      <Title
+        title="Codes"
+        subtitle={
+          vault.accounts.length
+            ? `${vault.accounts.length} account${vault.accounts.length === 1 ? '' : 's'}, safely tucked in`
+            : 'Your 2FA codes live here'
+        }
+      />
+      {vault.accounts.length > 0 && (
+        <>
+          <View style={[s.search, { backgroundColor: c.surfaceMuted }]}>
+            <Ionicons name="search" size={18} color={c.muted} />
+            <Input
+              placeholder="Search accounts"
+              value={query}
+              onChangeText={setQuery}
+              style={s.searchInput}
+              accessibilityLabel="Search accounts"
+              clearButtonMode="while-editing"
+            />
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.chips}
+          >
+            {chip(ALL_FOLDERS, 'All')}
+            {vault.folders.map((f) =>
+              chip(f.id, f.data.name, () => {
+                setFolder(f.id);
+                setPrompt('rename');
+              }),
+            )}
+            <Pressable
+              style={[s.chip, { borderWidth: 1, borderColor: c.border, borderStyle: 'dashed' }]}
+              onPress={() => setPrompt('new')}
+              accessibilityRole="button"
+              accessibilityLabel="New folder"
+            >
+              <Text style={{ color: c.accent, fontWeight: '500' }}>+ Folder</Text>
+            </Pressable>
+          </ScrollView>
+        </>
+      )}
+      {vault.error && <Text style={{ color: c.danger }}>{vault.error}</Text>}
+    </View>
+  );
+
   return (
-    <View style={[s.container, { backgroundColor: c.bg }]}>
-      <Input placeholder="Search" value={query} onChangeText={setQuery} style={s.search} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
-        {chip(ALL_FOLDERS, 'All')}
-        {vault.folders.map((f) =>
-          chip(f.id, f.data.name, () => {
-            setFolder(f.id);
-            setPrompt('rename');
-          }),
-        )}
-        <Pressable style={s.chip} onPress={() => setPrompt('new')}>
-          <Text style={{ color: c.accent }}>+ Folder</Text>
-        </Pressable>
-      </ScrollView>
+    <View style={[s.screen, { backgroundColor: c.bg }]}>
       <FlatList
         data={visible}
         keyExtractor={(a) => a.id}
-        renderItem={({ item }) => <CodeRow item={item} now={now} />}
-        refreshControl={<RefreshControl refreshing={vault.syncing} onRefresh={vault.sync} />}
+        contentContainerStyle={[s.list, { paddingTop: insets.top + 12 }]}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={header}
+        renderItem={({ item, index }) => (
+          <FadeIn delay={Math.min(index, 8) * 40}>
+            <CodeRow item={item} now={now} />
+          </FadeIn>
+        )}
+        refreshControl={
+          <RefreshControl refreshing={vault.syncing} onRefresh={vault.sync} tintColor={c.accent} />
+        }
         ListEmptyComponent={
-          <Text style={[s.empty, { color: c.muted }]}>No accounts here. Tap “Add account”.</Text>
+          vault.accounts.length === 0 ? (
+            <EmptyState
+              title="Nothing blooming yet"
+              body="Add your first account by scanning the QR code a site shows when you turn on two-factor sign-in."
+              action={{
+                title: 'Add your first account',
+                onPress: () => router.push('/add-account'),
+              }}
+            />
+          ) : (
+            <EmptyState
+              title={query ? 'No matches' : 'This folder is empty'}
+              body={
+                query ? `Nothing matches “${query}”.` : 'Long-press an account to move it here.'
+              }
+            />
+          )
         }
         ListFooterComponent={
-          <Text style={[s.hint, { color: c.muted }]}>
-            Tap to copy · long-press to edit · long-press a folder to rename
-          </Text>
+          visible.length > 0 ? (
+            <Text style={[s.hint, { color: c.muted }]}>
+              Tap to copy · long-press to edit · long-press a folder to rename
+            </Text>
+          ) : undefined
         }
       />
-      {vault.error && <Text style={s.error}>{vault.error}</Text>}
-      <View style={s.links}>
-        <Link href="/add-account" style={{ color: c.accent }}>
-          Add account
-        </Link>
-        <Link href="/settings" style={{ color: c.accent }}>
-          Settings
-        </Link>
-      </View>
+      <Pressable
+        style={({ pressed }) => [
+          s.fab,
+          { backgroundColor: c.accent, shadowColor: c.accent },
+          pressed && { transform: [{ scale: 0.94 }] },
+        ]}
+        onPress={() => {
+          haptic('tap');
+          router.push('/add-account');
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Add account"
+      >
+        <Ionicons name="add" size={30} color={c.accentText} />
+      </Pressable>
 
       <Prompt
         visible={prompt !== null}
@@ -231,44 +351,67 @@ export function CodesScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, padding: 16, width: '100%', maxWidth: 720, alignSelf: 'center' },
-  search: { marginBottom: 10 },
-  chips: { gap: 8, paddingBottom: 12 },
-  chip: {
-    borderWidth: 1,
-    borderColor: 'transparent',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  screen: { flex: 1 },
+  list: {
+    padding: 20,
+    paddingBottom: 120,
+    gap: 12,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
   },
-  flex: { flex: 1 },
+  search: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, paddingLeft: 14 },
+  searchInput: { flex: 1, borderWidth: 0, backgroundColor: 'transparent' },
+  chips: { gap: 8 },
+  chip: { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, minHeight: 36 },
+  flex: { flex: 1, gap: 2 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: 24,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   badge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { color: 'white', fontWeight: '600' },
-  code: { fontSize: 28, fontVariant: ['tabular-nums'], letterSpacing: 2 },
-  copied: { color: semantic.success, fontSize: 12 },
-  next: {
-    borderWidth: 1,
-    borderColor: rose[200],
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  badgeText: { fontWeight: '700', fontSize: 15 },
+  issuer: { fontSize: 16, fontWeight: '600' },
+  code: {
+    fontFamily: monoFont,
+    fontSize: 32,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1,
+    marginTop: 4,
   },
-  empty: { textAlign: 'center', marginTop: 40 },
+  codeCompact: { fontSize: 22, marginTop: 2 },
+  next: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  ringWrap: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  ringText: {
+    position: 'absolute',
+    fontSize: 11,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
   hint: { textAlign: 'center', fontSize: 12, marginTop: 8 },
-  error: { color: semantic.danger, textAlign: 'center' },
-  links: { flexDirection: 'row', justifyContent: 'space-around', padding: 16 },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
 });

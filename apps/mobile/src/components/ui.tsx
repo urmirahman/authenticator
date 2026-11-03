@@ -17,6 +17,7 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useHaptics, useReduceMotion } from '@/lib/motion';
 import { logoMark } from './brand-images';
@@ -131,10 +132,12 @@ export function Screen({
   refreshControl?: React.ReactElement<RefreshControlProps>;
 }) {
   const c = useColors();
+  const insets = useSafeAreaInsets();
   return (
     <ScrollView
       style={{ backgroundColor: c.bg }}
-      contentContainerStyle={styles.screen}
+      // Tab screens (with a big title) have no navigation header, so pad for the notch.
+      contentContainerStyle={[styles.screen, title ? { paddingTop: insets.top + 12 } : null]}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       refreshControl={refreshControl}

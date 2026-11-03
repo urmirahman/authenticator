@@ -13,19 +13,23 @@ import {
 } from 'react-native';
 import { logoMark } from '@/components/brand-images';
 import { useColors } from '@/components/theme';
-import { Button, Input, Label, styles as ui } from '@/components/ui';
+import { Button, FadeIn, IconBubble, Input, Label, styles as ui } from '@/components/ui';
+import { useHaptics } from '@/lib/motion';
 import { useVault } from './vault-store';
 
 const INTRO = [
   {
+    icon: 'lock-closed-outline' as const,
     title: 'Your codes, encrypted on this phone',
     body: 'Bloom encrypts every 2FA account on your device before it syncs. Our servers only ever see ciphertext.',
   },
   {
+    icon: 'key-outline' as const,
     title: 'One master password unlocks it',
     body: 'Pick a long passphrase you’ll remember. It never leaves your device — not even to us.',
   },
   {
+    icon: 'heart-outline' as const,
     title: 'Nobody can reset it',
     body: 'If you forget it, your vault can’t be recovered. Write it down and keep it somewhere safe, and keep encrypted backups.',
   },
@@ -41,18 +45,36 @@ function Onboarding({ onDone }: { onDone: () => void }) {
     <View style={[s.container, { backgroundColor: c.bg }]}>
       <View style={s.inner}>
         <Image source={logoMark} style={s.logo} accessibilityLabel="Bloom logo" />
-        <Text style={[s.step, { color: c.accent }]}>
-          Step {step + 1} of {INTRO.length}
-        </Text>
-        <Text style={[s.title, { color: c.text }]} accessibilityRole="header">
-          {page.title}
-        </Text>
-        <Text style={{ color: c.muted, fontSize: 16 }}>{page.body}</Text>
+        <View style={s.dots} accessible accessibilityLabel={`Step ${step + 1} of ${INTRO.length}`}>
+          {INTRO.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                s.dot,
+                { backgroundColor: i === step ? c.accent : c.border },
+                i === step && { width: 22 },
+              ]}
+            />
+          ))}
+        </View>
+        <FadeIn key={step}>
+          <View style={{ gap: 10, alignItems: 'center' }}>
+            <IconBubble name={page.icon} />
+            <Text
+              style={[s.title, { color: c.text, textAlign: 'center' }]}
+              accessibilityRole="header"
+            >
+              {page.title}
+            </Text>
+            <Text style={[s.body, { color: c.muted }]}>{page.body}</Text>
+          </View>
+        </FadeIn>
+        <View style={{ height: 8 }} />
         <Button
-          title={last ? 'Create master password' : 'Next'}
+          title={last ? 'Create my master password' : 'Next'}
           onPress={() => (last ? onDone() : setStep(step + 1))}
         />
-        {step > 0 && <Button variant="secondary" title="Back" onPress={() => setStep(step - 1)} />}
+        {step > 0 && <Button variant="ghost" title="Back" onPress={() => setStep(step - 1)} />}
       </View>
     </View>
   );
@@ -62,6 +84,7 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 export function UnlockScreen() {
   const vault = useVault();
   const c = useColors();
+  const haptic = useHaptics();
   const isSetup = vault.status === 'needs-setup';
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -94,7 +117,14 @@ export function UnlockScreen() {
     try {
       await (isSetup ? vault.setup(password) : vault.unlock(password));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed');
+      haptic('warning');
+      setError(
+        isSetup
+          ? e instanceof Error
+            ? e.message
+            : 'Something went wrong'
+          : 'That password didn’t open your vault. Try again?',
+      );
     } finally {
       setBusy(false);
     }
@@ -109,14 +139,19 @@ export function UnlockScreen() {
     >
       <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
         <View style={s.inner}>
-          <Text accessibilityRole="header" style={[s.title, { color: c.text }]}>
-            {isSetup ? 'Create master password' : 'Unlock vault'}
+          <Image source={logoMark} style={s.logo} accessibilityLabel="Bloom logo" />
+          <Text
+            accessibilityRole="header"
+            style={[s.title, { color: c.text, textAlign: 'center' }]}
+          >
+            {isSetup ? 'Create your master password' : 'Welcome back'}
           </Text>
-          <Text style={{ color: c.muted }}>
+          <Text style={[s.body, { color: c.muted }]}>
             {isSetup
-              ? 'It encrypts your codes on this phone. Nobody can reset it.'
-              : 'Codes are decrypted only on this phone.'}
+              ? 'A long, memorable phrase works best. It never leaves this phone.'
+              : 'Enter your master password to open your vault.'}
           </Text>
+          <View style={{ height: 8 }} />
           <View>
             <Label>Master password</Label>
             <Input
@@ -174,15 +209,29 @@ export function UnlockScreen() {
             </Pressable>
           )}
           {busy ? (
-            <ActivityIndicator />
+            <View style={s.busy}>
+              <ActivityIndicator color={c.accent} />
+              <Text style={{ color: c.muted }}>
+                {isSetup ? 'Planting your vault…' : 'Opening your vault…'}
+              </Text>
+            </View>
           ) : (
-            <Button title={isSetup ? 'Create vault' : 'Unlock'} onPress={submit} />
+            <Button
+              title={isSetup ? 'Create vault' : 'Unlock'}
+              icon={isSetup ? 'leaf-outline' : 'lock-open-outline'}
+              onPress={submit}
+            />
           )}
           {!isSetup && vault.biometric.enabled && (
-            <Button variant="secondary" title="Use Face ID / fingerprint" onPress={tryBiometric} />
+            <Button
+              variant="ghost"
+              icon="scan-outline"
+              title="Use Face ID / fingerprint"
+              onPress={tryBiometric}
+            />
           )}
           {error && (
-            <Text style={ui.error} accessibilityLiveRegion="polite">
+            <Text style={[ui.error, { textAlign: 'center' }]} accessibilityLiveRegion="polite">
               {error}
             </Text>
           )}
@@ -195,8 +244,7 @@ export function UnlockScreen() {
 const s = StyleSheet.create({
   container: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   inner: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 12 },
-  logo: { width: 96, height: 96, alignSelf: 'center' },
-  step: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase' },
+  logo: { width: 88, height: 88, alignSelf: 'center' },
   meter: { height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 4 },
   meterFill: { height: 6 },
   ack: { flexDirection: 'row', gap: 10, alignItems: 'center', minHeight: 44 },
@@ -208,5 +256,15 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontSize: 24, fontWeight: '700' },
+  title: { fontSize: 26, fontWeight: '700', letterSpacing: -0.3 },
+  body: { fontSize: 16, lineHeight: 23, textAlign: 'center' },
+  dots: { flexDirection: 'row', gap: 6, alignSelf: 'center', marginVertical: 8 },
+  dot: { height: 8, width: 8, borderRadius: 4 },
+  busy: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+  },
 });
