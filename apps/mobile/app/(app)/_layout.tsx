@@ -1,7 +1,8 @@
 import { router, Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { useColors } from '@/components/theme';
+import { SkeletonList } from '@/components/ui';
 import { UnlockScreen } from '@/features/vault/unlock-screen';
 import { useVault } from '@/features/vault/vault-store';
 
@@ -23,8 +24,8 @@ export default function AppLayout() {
 
   if (vault.status === 'loading') {
     return (
-      <View style={{ flex: 1, justifyContent: 'center' }}>
-        <ActivityIndicator />
+      <View style={{ flex: 1, backgroundColor: c.bg, padding: 24, paddingTop: 96 }}>
+        <SkeletonList count={4} />
       </View>
     );
   }
@@ -34,21 +35,22 @@ export default function AppLayout() {
       screenOptions={{
         headerTintColor: c.accent,
         headerStyle: { backgroundColor: c.bg },
-        headerTitleStyle: { color: c.text },
+        headerTitleStyle: { color: c.text, fontWeight: '600' },
+        headerShadowVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
         contentStyle: { backgroundColor: c.bg },
       }}
     >
-      <Stack.Screen name="codes" options={{ title: 'Codes' }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
       <Stack.Screen name="add-account" options={{ title: 'Add account', presentation: 'modal' }} />
-      <Stack.Screen name="settings" options={{ title: 'Settings' }} />
       <Stack.Screen
         name="edit-account"
         options={{ title: 'Edit account', presentation: 'modal' }}
       />
-      <Stack.Screen name="backups" options={{ title: 'Backups' }} />
-      <Stack.Screen name="transfer" options={{ title: 'Transfer' }} />
+      <Stack.Screen name="backups" options={{ title: 'Encrypted backups' }} />
+      <Stack.Screen name="transfer" options={{ title: 'Move to a new phone' }} />
       <Stack.Screen name="devices" options={{ title: 'Devices' }} />
-      <Stack.Screen name="activity" options={{ title: 'Activity' }} />
+      <Stack.Screen name="activity" options={{ title: 'Recent activity' }} />
       <Stack.Screen name="help" options={{ title: 'Help & about' }} />
     </Stack>
   );

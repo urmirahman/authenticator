@@ -1,39 +1,46 @@
 import {
   AUTO_LOCK_OPTIONS,
   CLIPBOARD_CLEAR_OPTIONS,
+  CODE_SIZE_OPTIONS,
+  MIN_MASTER_PASSWORD,
   minutesLabel,
   secondsLabel,
 } from '@repo/vault';
+import Constants from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
-import { router, type Href } from 'expo-router';
+import { router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import { useColors } from '@/components/theme';
-import { Button, Choice, Input, Label, Muted, Screen, Section } from '@/components/ui';
-import { signOutGoogle } from '@/features/auth/google-sign-in';
-import { clearBiometricKey } from '@/features/security/biometric-key';
+import { Alert, View } from 'react-native';
+import {
+  Button,
+  Card,
+  ChoiceRow,
+  Group,
+  Input,
+  Label,
+  Muted,
+  Row,
+  Screen,
+  SwitchRow,
+} from '@/components/ui';
 import { useVault } from '@/features/vault/vault-store';
-import { api, signOut } from '@/lib/api';
+import { api } from '@/lib/api';
+import { useHaptics } from '@/lib/motion';
+import { openWebPage } from '@/lib/web-url';
 import { DeleteAccount } from './delete-account';
 import { usePreferences } from './preferences';
 
-const LINKS: Array<{ href: Href; label: string }> = [
-  { href: '/backups', label: 'Encrypted backups' },
-  { href: '/transfer', label: 'Transfer to another phone' },
-  { href: '/devices', label: 'Devices' },
-  { href: '/activity', label: 'Activity log' },
-  { href: '/help', label: 'Help, privacy & about' },
-];
-
-function ChangePassword() {
+function ChangePassword({ onDone }: { onDone: () => void }) {
   const vault = useVault();
+  const haptic = useHaptics();
   const [f, setF] = useState({ current: '', next: '', confirm: '' });
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    if (f.next.length < 10) return setMsg('Use at least 10 characters.');
+    if (f.next.length < MIN_MASTER_PASSWORD)
+      return setMsg(`Use at least ${MIN_MASTER_PASSWORD} characters.`);
     if (f.next !== f.confirm) return setMsg('New passwords do not match.');
     setBusy(true);
     setMsg(null);
@@ -41,7 +48,12 @@ function ChangePassword() {
     try {
       await vault.changePassword(f.current, f.next);
       setF({ current: '', next: '', confirm: '' });
-      setMsg('Changed. Biometric unlock was turned off; turn it on again if you want it.');
+      haptic('success');
+      Alert.alert(
+        'Password changed',
+        'All set. Biometric unlock was turned off — switch it back on if you like.',
+      );
+      onDone();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Failed');
     } finally {
@@ -50,7 +62,7 @@ function ChangePassword() {
   };
 
   return (
-    <>
+    <Card style={{ gap: 6 }}>
       <Label>Current master password</Label>
       <Input
         secureTextEntry
@@ -65,123 +77,178 @@ function ChangePassword() {
         value={f.confirm}
         onChangeText={(confirm) => setF({ ...f, confirm })}
       />
+      <View style={{ height: 6 }} />
       <Button
-        variant="secondary"
-        title={busy ? 'Working…' : 'Change master password'}
+        title={busy ? 'Re-encrypting…' : 'Change master password'}
         disabled={busy}
         onPress={submit}
       />
       {msg && <Muted>{msg}</Muted>}
-    </>
+    </Card>
   );
 }
 
 export function SettingsScreen() {
   const vault = useVault();
   const prefs = usePreferences();
-  const c = useColors();
   const [bioMsg, setBioMsg] = useState<string | null>(null);
+  const [changing, setChanging] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   /** "Download my data": write the JSON to a temp file and open the share sheet. */
   const exportData = async () => {
-    const data = await api.users.exportData();
-    const file = new File(Paths.cache, 'bloom-export.json');
-    file.write(JSON.stringify(data, null, 2));
-    await Sharing.shareAsync(file.uri, { mimeType: 'application/json' });
+    try {
+      const data = await api.users.exportData();
+      const file = new File(Paths.cache, 'bloom-export.json');
+      file.write(JSON.stringify(data, null, 2));
+      await Sharing.shareAsync(file.uri, { mimeType: 'application/json' });
+    } catch (e) {
+      Alert.alert('Could not export', e instanceof Error ? e.message : 'Try again');
+    }
   };
 
-  return (
-    <Screen>
-      {LINKS.map((l) => (
-        <Pressable
-          key={l.label}
-          style={[s.link, { backgroundColor: c.card }]}
-          onPress={() => router.push(l.href)}
-          accessibilityRole="link"
-          accessibilityLabel={l.label}
-        >
-          <Text style={{ color: c.text }}>{l.label}</Text>
-          <Text style={{ color: c.muted }}>›</Text>
-        </Pressable>
-      ))}
+  const cap = (t: string) => t[0]!.toUpperCase() + t.slice(1);
 
-      <Section title="Security">
-        <Label>Lock after this long in the background</Label>
-        <Choice
+  return (
+    <Screen title="Settings" subtitle="Make Bloom feel like home.">
+      <Group
+        title="Security"
+        footer="Biometric unlock keeps a copy of the vault key in this phone's secure hardware. Screenshots and screen recording are always blocked while Bloom is open."
+      >
+        {vault.biometric.available && (
+          <SwitchRow
+            icon="scan-outline"
+            label="Face ID / fingerprint"
+            hint={bioMsg ?? 'Unlock without typing your password'}
+            value={vault.biometric.enabled}
+            onChange={(on) =>
+              vault.setBiometric(on).then(
+                () => setBioMsg(null),
+                (e: Error) => setBioMsg(e.message),
+              )
+            }
+          />
+        )}
+        <ChoiceRow
+          label="Auto-lock after"
           options={AUTO_LOCK_OPTIONS}
           value={prefs.autoLockMinutes as (typeof AUTO_LOCK_OPTIONS)[number]}
-          label={minutesLabel}
+          format={minutesLabel}
           onChange={(autoLockMinutes) => prefs.update({ autoLockMinutes })}
         />
-        <Label>Clear clipboard after copying</Label>
-        <Choice
-          options={CLIPBOARD_CLEAR_OPTIONS}
-          value={prefs.clipboardClearSeconds as (typeof CLIPBOARD_CLEAR_OPTIONS)[number]}
-          label={secondsLabel}
-          onChange={(clipboardClearSeconds) => prefs.update({ clipboardClearSeconds })}
+        <Row icon="lock-closed-outline" label="Lock now" onPress={vault.lock} />
+        <Row
+          icon="key-outline"
+          label="Change master password"
+          onPress={() => setChanging(!changing)}
+          last
         />
-        {vault.biometric.available && (
-          <View style={s.switchRow}>
-            <Text style={[s.flex, { color: c.text }]}>Unlock with Face ID / fingerprint</Text>
-            <Switch
-              value={vault.biometric.enabled}
-              onValueChange={(on) =>
-                vault.setBiometric(on).then(
-                  () => setBioMsg(null),
-                  (e: Error) => setBioMsg(e.message),
-                )
-              }
-            />
-          </View>
-        )}
-        <Muted>
-          Biometric unlock keeps a copy of the vault key in this phone&apos;s secure hardware.
-          Anyone who can pass your Face ID / fingerprint can open the vault. Off by default.
-        </Muted>
-        {bioMsg && <Muted>{bioMsg}</Muted>}
-      </Section>
+      </Group>
+      {changing && <ChangePassword onDone={() => setChanging(false)} />}
 
-      <Section title="Appearance">
-        <Choice
+      <Group title="Preferences">
+        <ChoiceRow
+          label="Theme"
           options={['system', 'light', 'dark'] as const}
           value={prefs.theme}
-          label={(t) => t[0]!.toUpperCase() + t.slice(1)}
+          format={cap}
           onChange={(theme) => prefs.update({ theme })}
         />
-      </Section>
+        <ChoiceRow
+          label="Clear clipboard after copying"
+          options={CLIPBOARD_CLEAR_OPTIONS}
+          value={prefs.clipboardClearSeconds as (typeof CLIPBOARD_CLEAR_OPTIONS)[number]}
+          format={secondsLabel}
+          onChange={(clipboardClearSeconds) => prefs.update({ clipboardClearSeconds })}
+        />
+        <ChoiceRow
+          label="Code size"
+          options={CODE_SIZE_OPTIONS}
+          value={prefs.codeSize}
+          format={cap}
+          onChange={(codeSize) => prefs.update({ codeSize })}
+        />
+        <SwitchRow
+          icon="pause-outline"
+          label="Group digits"
+          hint="Show 123 456 instead of 123456"
+          value={prefs.groupDigits}
+          onChange={(groupDigits) => prefs.update({ groupDigits })}
+        />
+        <SwitchRow
+          icon="play-forward-outline"
+          label="Show next code"
+          hint="Peek at the upcoming code in the last 10 seconds"
+          value={prefs.showNextCode}
+          onChange={(showNextCode) => prefs.update({ showNextCode })}
+        />
+        <SwitchRow
+          icon="pulse-outline"
+          label="Haptics"
+          hint="Gentle taps when you copy or switch"
+          value={prefs.haptics}
+          onChange={(haptics) => prefs.update({ haptics })}
+          last
+        />
+      </Group>
 
-      <Section title="Master password">
-        <ChangePassword />
-      </Section>
+      <Group title="Your data">
+        <Row
+          icon="cloud-upload-outline"
+          label="Encrypted backups"
+          onPress={() => router.push('/backups')}
+        />
+        <Row
+          icon="qr-code-outline"
+          label="Move to a new phone"
+          onPress={() => router.push('/transfer')}
+        />
+        <Row
+          icon="sync-outline"
+          label={vault.syncing ? 'Syncing…' : 'Sync now'}
+          onPress={vault.sync}
+        />
+        <Row
+          icon="download-outline"
+          label="Download my data"
+          hint="A JSON copy; your codes stay encrypted"
+          onPress={exportData}
+          last
+        />
+      </Group>
 
-      <Section title="Your data">
-        <Button variant="secondary" title="Download my data (JSON)" onPress={exportData} />
-      </Section>
+      <Group title="About">
+        <Row icon="help-buoy-outline" label="Help & FAQ" onPress={() => router.push('/help')} />
+        <Row
+          icon="shield-checkmark-outline"
+          label="Privacy policy"
+          external
+          onPress={() => openWebPage('/privacy')}
+        />
+        <Row
+          icon="document-text-outline"
+          label="Terms of service"
+          external
+          onPress={() => openWebPage('/terms')}
+        />
+        <Row
+          icon="flower-outline"
+          label="Version"
+          value={Constants.expoConfig?.version ?? '—'}
+          last
+        />
+      </Group>
 
-      <Button
-        title={vault.syncing ? 'Syncing…' : 'Sync now'}
-        onPress={vault.sync}
-        variant="secondary"
-      />
-      <Button title="Lock now" onPress={vault.lock} variant="secondary" />
-      <Button
-        variant="danger"
-        title="Sign out"
-        onPress={async () => {
-          vault.lock();
-          await clearBiometricKey(); // a new sign-in must opt in again
-          await signOutGoogle();
-          await signOut();
-          router.replace('/sign-in');
-        }}
-      />
-      <DeleteAccount />
+      <Group title="Danger zone">
+        <Row
+          icon="trash-outline"
+          label="Delete account"
+          destructive
+          onPress={() => setDeleting(!deleting)}
+          last
+        />
+      </Group>
+      {deleting && <DeleteAccount />}
     </Screen>
   );
 }
-
-const s = StyleSheet.create({
-  link: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, borderRadius: 12 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  flex: { flex: 1 },
-});

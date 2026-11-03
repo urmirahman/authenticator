@@ -47,6 +47,8 @@ interface VaultState {
   accounts: Decrypted<AccountData>[];
   folders: Decrypted<FolderData>[];
   syncing: boolean;
+  /** When the last successful pull finished (ms epoch), for the Profile screen. */
+  lastSyncedAt: number | null;
   error: string | null;
   load(): Promise<void>;
   setup(password: string): Promise<void>;
@@ -75,6 +77,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<VaultStatus>('loading');
   const [items, setItems] = useState<Map<string, Decrypted<ItemData>>>(new Map());
   const [syncing, setSyncing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const vault = useRef<Vault | null>(null);
   const key = useRef<Uint8Array | null>(null);
@@ -132,6 +135,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         if (!page.hasMore) break;
       }
       setError(null);
+      setLastSyncedAt(Date.now());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sync failed');
     } finally {
@@ -279,6 +283,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     return {
       status,
       syncing,
+      lastSyncedAt,
       error,
       accounts: (all.filter((i) => i.kind === 'account') as Decrypted<AccountData>[]).sort((a, b) =>
         (a.data.issuer || a.data.label).localeCompare(b.data.issuer || b.data.label),
@@ -301,6 +306,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     items,
     status,
     syncing,
+    lastSyncedAt,
     error,
     load,
     setup,

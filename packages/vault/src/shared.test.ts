@@ -2,7 +2,7 @@ import { strengthOf } from './strength';
 import { describe, expect, it } from 'vitest';
 import { activityLabel } from './activity';
 import { accountsInFolder, ALL_FOLDERS, filterAccounts, qrCountFor } from './folders';
-import { DEFAULT_PREFERENCES, parsePreferences } from './preferences';
+import { DEFAULT_PREFERENCES, formatCode, parsePreferences } from './preferences';
 import type { AccountData, Decrypted } from './vault-codec';
 
 const acc = (id: string, issuer: string, folderId?: string): Decrypted<AccountData> => ({
@@ -40,6 +40,18 @@ describe('preferences', () => {
       ...DEFAULT_PREFERENCES,
       autoLockMinutes: 0,
     });
+    expect(
+      parsePreferences(
+        '{"haptics":false,"codeSize":"compact","showNextCode":"yes","groupDigits":1}',
+      ),
+    ).toEqual({ ...DEFAULT_PREFERENCES, haptics: false, codeSize: 'compact' });
+  });
+
+  it('groups codes 3-3 or 4-4', () => {
+    expect(formatCode('123456', true)).toBe('123 456');
+    expect(formatCode('12345678', true)).toBe('1234 5678');
+    expect(formatCode('1234567', true)).toBe('1234567');
+    expect(formatCode('123456', false)).toBe('123456');
   });
 });
 

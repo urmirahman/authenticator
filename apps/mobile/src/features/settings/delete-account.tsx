@@ -2,7 +2,7 @@ import { ApiError } from '@repo/api-client';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
-import { Button, Input, Label, Muted, Section, styles as ui } from '@/components/ui';
+import { Button, Card, Input, Label, Muted, styles as ui } from '@/components/ui';
 import { signOutGoogle } from '@/features/auth/google-sign-in';
 import { clearBiometricKey } from '@/features/security/biometric-key';
 import { useVault } from '@/features/vault/vault-store';
@@ -52,7 +52,7 @@ export function DeleteAccount() {
   };
 
   return (
-    <Section title="Danger zone">
+    <Card style={{ gap: 12 }}>
       <Muted>
         Deletes your account, encrypted vault, backups, devices and history. This can’t be undone.
         Export a backup first if you might need your codes.
@@ -76,6 +76,6 @@ export function DeleteAccount() {
         />
       )}
       {error && <Text style={ui.error}>{error}</Text>}
-    </Section>
+    </Card>
   );
 }
