@@ -4,6 +4,8 @@ package config
 import (
 	"fmt"
 	"os"
+
+	"github.com/joho/godotenv"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +50,10 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
+	// Local dev: read apps/server/.env if it exists. Real environment variables
+	// always win (godotenv never overrides), so production config is unaffected.
+	_ = godotenv.Load()
+
 	cfg := &Config{
 		Env:              get("APP_ENV", "development"),
 		Port:             getInt("PORT", 8787),
