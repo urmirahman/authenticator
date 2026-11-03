@@ -5,6 +5,13 @@ for a real phone), start the API with `DEV_AUTH=true`, then `pnpm -F @authentica
 Camera, biometrics and screenshot blocking need a development build (`pnpm -F @authenticator/mobile ios` /
 `android`), not Expo Go.
 
+## Google sign-in
+
+Set `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `.env`, then
+`npx expo prebuild --clean && npx expo run:ios`. The button only shows when the current platform's client id is set
+(Android needs `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`). Code: `src/features/auth/google-sign-in.ts`. Full steps:
+`docs/OAUTH_SETUP.md`, decision: ADR 34.
+
 ## Tour
 
 ```

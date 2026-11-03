@@ -20,7 +20,7 @@ func TestVerify(t *testing.T) {
 		t.Fatal(err)
 	}
 	other, _ := rsa.GenerateKey(rand.Reader, 2048)
-	v := New(&oidc.StaticKeySet{PublicKeys: []crypto.PublicKey{&key.PublicKey}}, AppleIssuers, []string{"dev.urmi.app"})
+	v := New(&oidc.StaticKeySet{PublicKeys: []crypto.PublicKey{&key.PublicKey}}, AppleIssuers, []string{"dev.urmi.app", "ios-client.apps.googleusercontent.com"})
 
 	sign := func(k *rsa.PrivateKey, mod func(jwt.MapClaims)) string {
 		c := jwt.MapClaims{
@@ -46,6 +46,8 @@ func TestVerify(t *testing.T) {
 	}{
 		{"valid, hashed nonce", sign(key, nil), "n0nce", false},
 		{"wrong signing key", sign(other, nil), "n0nce", true},
+		{"extra audience (e.g. Google iOS client id)", sign(key, func(c jwt.MapClaims) { c["aud"] = "ios-client.apps.googleusercontent.com" }), "n0nce", false},
+		{"no nonce expected (native SDK without nonce)", sign(key, func(c jwt.MapClaims) { delete(c, "nonce") }), "", false},
 		{"wrong audience", sign(key, func(c jwt.MapClaims) { c["aud"] = "someone.else" }), "n0nce", true},
 		{"wrong issuer", sign(key, func(c jwt.MapClaims) { c["iss"] = "https://evil.example" }), "n0nce", true},
 		{"expired", sign(key, func(c jwt.MapClaims) { c["exp"] = time.Now().Add(-time.Hour).Unix() }), "n0nce", true},

@@ -4,17 +4,18 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Button, Input, Label, styles as ui } from '@/components/ui';
 import { api, completeSignIn, DEV_AUTH } from '@/lib/api';
+import { googleSignInConfigured, signInWithGoogle } from './google-sign-in';
 
-const PROVIDERS: Array<{ id: OAuthProvider; label: string }> = [
+/** Providers still waiting for setup. Google is real (below) and hidden when not configured. */
+const PLACEHOLDERS: Array<{ id: OAuthProvider; label: string }> = [
   { id: 'apple', label: 'Continue with Apple' },
-  { id: 'google', label: 'Continue with Google' },
   { id: 'facebook', label: 'Continue with Facebook' },
 ];
 
 /**
- * OAuth on mobile uses the native SDKs (expo-apple-authentication, Google Sign-In, Facebook SDK).
- * They return an id_token / auth code, which we send to api.auth.nativeSignIn(provider, ...).
- * Those SDKs need your provider app IDs, so the buttons are placeholders for now.
+ * OAuth on mobile uses the native SDKs. They return an id_token / auth code, which we send to
+ * api.auth.nativeSignIn(provider, ...). Google is wired up (google-sign-in.ts); Apple and Facebook
+ * still need their app IDs, so those buttons are placeholders.
  */
 export function SignInScreen() {
   const [email, setEmail] = useState('dev@example.com');
@@ -34,10 +35,25 @@ export function SignInScreen() {
     }
   };
 
+  const google = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (await signInWithGoogle()) router.replace('/codes');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Google sign-in failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <View style={s.container}>
       <Text style={s.title}>Authenticator</Text>
-      {PROVIDERS.map((p) => (
+      {googleSignInConfigured && (
+        <Button title="Continue with Google" onPress={google} disabled={busy} />
+      )}
+      {PLACEHOLDERS.map((p) => (
         <Button
           key={p.id}
           variant="secondary"

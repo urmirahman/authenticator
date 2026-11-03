@@ -39,3 +39,8 @@
     - _Mitigations:_ off by default, explicit opt-in toggle with an explanation; cleared on sign-out and on master password change (re-opt-in knowingly); if reading fails we fall back to the master password and delete the copy. Master password is still required on first setup and can always be used.
     - _Rejected:_ storing the master password itself (worse: it also unlocks other devices and backups if reused).
 33. **App preferences, activity labels and folder filtering live in `@repo/vault`** so web and mobile behave the same; each platform only decides where to store preferences (localStorage vs SecureStore).
+
+34. **Mobile Google sign-in uses `@react-native-google-signin/google-signin` (native SDK), not `expo-auth-session`.**
+    - _Why:_ it shows the native Google account sheet (no browser pop-up), returns an `id_token` directly, works with Expo dev builds through its config plugin (iOS URL scheme from the reversed client id), and is actively maintained for current Expo SDKs. `expo-auth-session`'s Google provider is browser-based, needs redirect-URI juggling per platform, and Expo itself recommends the native library for Google.
+    - _Cost:_ needs a development build (no Expo Go) and a prebuild whenever the iOS client id changes. We use the free "Original" API; no nonce is sent, so the server verifies signature, issuer, audience and expiry only (nonce is optional in `idtoken.Verify`).
+    - _Server side:_ unchanged. `POST /v1/auth/oauth/google/token` with `{ idToken }`; the audience must be `GOOGLE_CLIENT_ID` or one of `GOOGLE_EXTRA_AUDIENCES`.

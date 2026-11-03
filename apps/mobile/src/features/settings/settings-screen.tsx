@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { useColors } from '@/components/theme';
 import { Button, Choice, Input, Label, Muted, Screen, Section } from '@/components/ui';
+import { signOutGoogle } from '@/features/auth/google-sign-in';
 import { clearBiometricKey } from '@/features/security/biometric-key';
 import { useVault } from '@/features/vault/vault-store';
 import { api, signOut } from '@/lib/api';
@@ -165,6 +166,7 @@ export function SettingsScreen() {
         onPress={async () => {
           vault.lock();
           await clearBiometricKey(); // a new sign-in must opt in again
+          await signOutGoogle();
           await signOut();
           router.replace('/sign-in');
         }}

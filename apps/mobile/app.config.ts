@@ -1,5 +1,12 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
+/**
+ * Google Sign-In on iOS needs the "reversed client id" as a URL scheme, so Google can hand the
+ * result back to the app: 123-abc.apps.googleusercontent.com -> com.googleusercontent.apps.123-abc
+ */
+const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
+export const reversedClientId = (id: string) => id.split('.').reverse().join('.');
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Authenticator',
@@ -19,6 +26,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     'expo-secure-store',
+    // Only added when an iOS client id exists; otherwise the plugin would fail the build.
+    ...(googleIosClientId
+      ? [
+          [
+            '@react-native-google-signin/google-signin',
+            { iosUrlScheme: reversedClientId(googleIosClientId) },
+          ] as [string, object],
+        ]
+      : []),
     ['expo-camera', { cameraPermission: 'Allow Authenticator to scan QR codes to add accounts.' }],
   ],
   experiments: { typedRoutes: true },
