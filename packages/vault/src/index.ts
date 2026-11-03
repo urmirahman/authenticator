@@ -10,3 +10,4 @@ export * from './account-mapping';
 export * from './preferences';
 export * from './activity';
 export * from './folders';
+export * from './strength';

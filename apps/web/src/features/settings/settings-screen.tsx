@@ -7,6 +7,7 @@ import { Field, inputClass, PageTitle } from '@/components/ui';
 import { passkeysSupported, registerPasskey } from '@/features/auth/passkey';
 import { api } from '@/lib/api';
 import { ChangePasswordForm } from './change-password';
+import { DeleteAccount } from './delete-account';
 import { updateSettings, useSettings, type Settings } from './settings';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -151,7 +152,35 @@ export function SettingsScreen() {
         <Button variant="secondary" onClick={exportData}>
           Download my data (JSON)
         </Button>
+        <a
+          href="/recovery-kit"
+          className="block rounded-md py-2 text-center text-sm font-semibold text-accent ring-1 ring-line hover:bg-surface-muted"
+        >
+          Print recovery kit
+        </a>
       </Section>
+
+      <Section title="Danger zone">
+        <DeleteAccount />
+      </Section>
+
+      <p className="text-center text-xs text-muted">
+        <a href="/privacy" className="underline">
+          Privacy
+        </a>{' '}
+        ·{' '}
+        <a href="/terms" className="underline">
+          Terms
+        </a>{' '}
+        ·{' '}
+        <a href="/help" className="underline">
+          Help
+        </a>{' '}
+        ·{' '}
+        <a href="/about" className="underline">
+          About
+        </a>
+      </p>
     </div>
   );
 }

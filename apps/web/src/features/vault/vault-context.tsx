@@ -45,6 +45,8 @@ interface VaultState {
   unlock(password: string): Promise<void>;
   lock(): void;
   changePassword(current: string, next: string): Promise<void>;
+  /** Throws 'Wrong master password' if it does not unlock this vault. */
+  verifyPassword(password: string): Promise<void>;
   sync(): Promise<void>;
   save(kind: VaultItemKind, data: ItemData, id?: string): Promise<string>;
   remove(id: string): Promise<void>;
@@ -161,6 +163,11 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     vault.current = await api.vaults.rekey(v.id, await wrapVaultKey(k, next, defaultKdfParams()));
   }, []);
 
+  const verifyPassword = useCallback(async (password: string) => {
+    if (!vault.current) throw new Error('No vault');
+    (await unlockEnvelope(password, vault.current)).fill(0);
+  }, []);
+
   /** Write one item. On a 409 conflict we take the server copy and tell the user to retry. */
   const putItem = useCallback(
     async (id: string, kind: VaultItemKind, data: ItemData | null, version: number) => {
@@ -228,6 +235,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       unlock,
       lock,
       changePassword,
+      verifyPassword,
       sync,
       save,
       remove,
@@ -243,6 +251,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     unlock,
     lock,
     changePassword,
+    verifyPassword,
     sync,
     save,
     remove,

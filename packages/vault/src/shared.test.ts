@@ -1,3 +1,4 @@
+import { strengthOf } from './strength';
 import { describe, expect, it } from 'vitest';
 import { activityLabel } from './activity';
 import { accountsInFolder, ALL_FOLDERS, filterAccounts, qrCountFor } from './folders';
@@ -46,5 +47,14 @@ describe('activity labels', () => {
   it('maps known actions and passes unknown through', () => {
     expect(activityLabel('backup.created')).toBe('Backup created');
     expect(activityLabel('x.y')).toBe('x.y');
+  });
+});
+
+describe('password strength hint', () => {
+  it('scores length and passphrases', () => {
+    expect(strengthOf('short').score).toBe(0);
+    expect(strengthOf('abcdefghij').score).toBe(1);
+    expect(strengthOf('Abcdefghij1234').score).toBe(2);
+    expect(strengthOf('correct horse battery staple').score).toBe(3);
   });
 });

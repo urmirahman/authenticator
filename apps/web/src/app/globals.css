@@ -66,3 +66,12 @@ body {
 .prose-bloom blockquote {
   @apply mb-4 border-l-4 border-accent/50 pl-4 text-muted;
 }
+
+@keyframes slidein {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
