@@ -42,11 +42,11 @@ export function UnlockScreen() {
   };
 
   return (
-    <Card className="mx-auto max-w-sm space-y-4 dark:bg-slate-900 dark:ring-slate-800">
+    <Card className="mx-auto max-w-sm space-y-4">
       <h1 className="text-xl font-semibold">
         {isSetup ? 'Create your master password' : 'Unlock your vault'}
       </h1>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-muted">
         {isSetup
           ? 'It encrypts your codes on this device. We never see it and cannot reset it, so store it somewhere safe.'
           : 'Your codes are decrypted only on this device.'}
@@ -75,7 +75,7 @@ export function UnlockScreen() {
         )}
         <Button disabled={busy}>{busy ? 'Working…' : isSetup ? 'Create vault' : 'Unlock'}</Button>
       </form>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </Card>
   );
 }

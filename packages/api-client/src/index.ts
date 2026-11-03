@@ -99,7 +99,11 @@ export function createApiClient({
     users: {
       me: () => request<User>('GET', '/users/me'),
       update: (displayName: string) => request<User>('PATCH', '/users/me', { displayName }),
-      deleteAccount: () => request<void>('DELETE', '/users/me'),
+      /**
+       * Permanent. Needs confirm = "DELETE" and a sign-in from the last 10 minutes;
+       * otherwise ApiError 403 code "reauth_required" (sign in again, then retry).
+       */
+      deleteAccount: (confirm = 'DELETE') => request<void>('DELETE', '/users/me', { confirm }),
       /** "Download my data" (vault items stay encrypted). */
       exportData: () => request<Record<string, unknown>>('GET', '/users/me/export'),
     },

@@ -4,15 +4,29 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
 
-var ErrInvalidName = errors.New("displayName must be 1-80 characters")
+var (
+	ErrInvalidName    = errors.New("displayName must be 1-80 characters")
+	ErrConfirmPhrase  = errors.New(`type "DELETE" to confirm`)
+	ErrReauthRequired = errors.New("please sign in again before deleting your account")
+)
 
-type Service struct{ repo Repository }
+// DeleteConfirmPhrase must be sent in the body of DELETE /users/me.
+const DeleteConfirmPhrase = "DELETE"
 
-func NewService(repo Repository) *Service { return &Service{repo: repo} }
+// ReauthWindow: account deletion needs a sign-in at most this old (ADR 35).
+const ReauthWindow = 10 * time.Minute
+
+type Service struct {
+	repo Repository
+	now  func() time.Time
+}
+
+func NewService(repo Repository) *Service { return &Service{repo: repo, now: time.Now} }
 
 func (s *Service) Me(ctx context.Context, id uuid.UUID) (User, error) {
 	u, err := s.repo.GetByID(ctx, id)
@@ -34,6 +48,20 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, req UpdateRequest) (
 	return fromDB(u), nil
 }
 
-func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
+// Delete permanently removes the account. Two guards (ADR 35):
+//  1. an explicit confirmation phrase, so a stray request can't do it;
+//  2. a recent sign-in (re-auth): a stolen long-lived refresh token alone is not enough,
+//     the attacker would also need to pass Google/Apple/passkey sign-in again.
+//
+// ON DELETE CASCADE then removes identities, sessions, devices, passkeys, vaults, items,
+// sync log, backups and audit rows.
+func (s *Service) Delete(ctx context.Context, id, sessionFamily uuid.UUID, confirm string) error {
+	if confirm != DeleteConfirmPhrase {
+		return ErrConfirmPhrase
+	}
+	at, err := s.repo.SignedInAt(ctx, id, sessionFamily)
+	if err != nil || at.IsZero() || s.now().Sub(at) > ReauthWindow {
+		return ErrReauthRequired
+	}
 	return s.repo.Delete(ctx, id)
 }

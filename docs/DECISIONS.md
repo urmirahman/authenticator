@@ -44,3 +44,8 @@
     - _Why:_ it shows the native Google account sheet (no browser pop-up), returns an `id_token` directly, works with Expo dev builds through its config plugin (iOS URL scheme from the reversed client id), and is actively maintained for current Expo SDKs. `expo-auth-session`'s Google provider is browser-based, needs redirect-URI juggling per platform, and Expo itself recommends the native library for Google.
     - _Cost:_ needs a development build (no Expo Go) and a prebuild whenever the iOS client id changes. We use the free "Original" API; no nonce is sent, so the server verifies signature, issuer, audience and expiry only (nonce is optional in `idtoken.Verify`).
     - _Server side:_ unchanged. `POST /v1/auth/oauth/google/token` with `{ idToken }`; the audience must be `GOOGLE_CLIENT_ID` or one of `GOOGLE_EXTRA_AUDIENCES`.
+
+35. **Account deletion needs a confirmation phrase and a recent sign-in (re-auth).**
+    - `DELETE /v1/users/me` with `{ "confirm": "DELETE" }`; the current session family must have started (a real sign-in, not a token refresh) within the last 10 minutes, otherwise `403 reauth_required`.
+    - _Why:_ the server can't check the master password (it never sees it), so "re-auth" means signing in again with Google/Apple/passkey. A stolen refresh token alone can't destroy an account. The client UI additionally asks for the master password locally as a "are you really sure" step, which proves nothing to the server but prevents accidents.
+    - Deletion cascades in Postgres (identities, sessions, devices, passkeys, vaults, items, sync log, backups, audit). Database backups age out on their own schedule (privacy policy TODO).

@@ -248,8 +248,21 @@ paths:
       responses: { '200': { $ref: '#/components/responses/User' } }
     delete:
       tags: [users]
-      summary: Delete the account and everything in it (cascade)
-      responses: { '204': { description: Deleted } }
+      summary: Permanently delete the account (needs confirmation and a recent sign-in)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm]
+              properties:
+                confirm: { type: string, enum: [DELETE] }
+      responses:
+        '204':
+          { description: 'Deleted; cascades to devices, sessions, vault, backups and activity' }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { description: 'reauth_required: sign in again (within 10 minutes) and retry' }
 
   /users/me/export:
     get:

@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -169,6 +170,23 @@ func (q *Queries) ListIdentitiesByUser(ctx context.Context, userID uuid.UUID) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const sessionSignedInAt = `-- name: SessionSignedInAt :one
+SELECT min(created_at)::timestamptz AS signed_in_at FROM sessions WHERE family_id = $1 AND user_id = $2
+`
+
+type SessionSignedInAtParams struct {
+	FamilyID uuid.UUID `json:"family_id"`
+	UserID   uuid.UUID `json:"user_id"`
+}
+
+// When this sign-in happened: the first session row of the refresh-token family (rotation adds rows).
+func (q *Queries) SessionSignedInAt(ctx context.Context, arg SessionSignedInAtParams) (time.Time, error) {
+	row := q.db.QueryRow(ctx, sessionSignedInAt, arg.FamilyID, arg.UserID)
+	var signed_in_at time.Time
+	err := row.Scan(&signed_in_at)
+	return signed_in_at, err
 }
 
 const updateUserProfile = `-- name: UpdateUserProfile :one

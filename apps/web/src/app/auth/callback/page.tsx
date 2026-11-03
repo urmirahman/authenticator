@@ -26,14 +26,14 @@ export default function OAuthCallbackPage() {
   return (
     <main className="flex min-h-screen items-center justify-center p-6 text-sm">
       {error ? (
-        <p className="text-red-600">
+        <p className="text-danger">
           Sign-in failed: {error}.{' '}
           <a className="underline" href="/sign-in">
             Try again
           </a>
         </p>
       ) : (
-        <p className="text-slate-500">Signing you in…</p>
+        <p className="text-muted">Signing you in…</p>
       )}
     </main>
   );

@@ -99,7 +99,11 @@ func TestIntegrationVaultSyncFlow(t *testing.T) {
 		t.Fatalf("dev token: %d", s)
 	}
 	c.token = tok.AccessToken
-	defer c.do("DELETE", "/users/me", nil, nil)
+	defer c.do("DELETE", "/users/me", map[string]string{"confirm": "DELETE"}, nil)
+	// Account deletion needs the confirmation phrase (ADR 35).
+	if s := c.do("DELETE", "/users/me", nil, nil); s != 400 {
+		t.Fatalf("delete without confirm = %d, want 400", s)
+	}
 
 	// 2. create a vault (salt/wrapped key are random bytes here; real ones come from @repo/crypto)
 	var v struct{ ID uuid.UUID }
@@ -218,7 +222,7 @@ func TestIntegrationVaultSyncFlow(t *testing.T) {
 	var tok2 struct{ AccessToken string }
 	other.do("POST", "/dev/token", map[string]string{"email": uuid.NewString() + "@test.local"}, &tok2)
 	other.token = tok2.AccessToken
-	defer other.do("DELETE", "/users/me", nil, nil)
+	defer other.do("DELETE", "/users/me", map[string]string{"confirm": "DELETE"}, nil)
 	if s := other.do("GET", "/vaults/"+v.ID.String(), nil, nil); s != 404 {
 		t.Fatalf("other user should get 404, got %d", s)
 	}

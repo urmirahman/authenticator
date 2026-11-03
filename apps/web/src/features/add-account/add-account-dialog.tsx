@@ -89,11 +89,11 @@ export function AddAccountDialog({
   return (
     <Dialog title={editing ? 'Edit account' : 'Add account'} onClose={onClose}>
       {!editing && (
-        <div className="mb-4 flex gap-1 rounded-xl bg-slate-100 p-1 text-sm dark:bg-slate-800">
+        <div className="mb-4 flex gap-1 rounded-xl bg-surface-muted p-1 text-sm">
           {(['manual', 'qr', 'paste'] as Tab[]).map((t) => (
             <button
               key={t}
-              className={`flex-1 rounded-lg py-1.5 ${tab === t ? 'bg-white shadow-sm dark:bg-slate-700' : ''}`}
+              className={`flex-1 rounded-lg py-1.5 ${tab === t ? 'bg-surface shadow-sm' : ''}`}
               onClick={() => {
                 setTab(t);
                 setFound([]);
@@ -168,7 +168,7 @@ export function AddAccountDialog({
             <Button
               type="button"
               variant="ghost"
-              className="text-red-600"
+              className="text-danger"
               disabled={busy}
               onClick={() =>
                 confirm('Delete this account? You may lose access to the site.') &&
@@ -185,7 +185,7 @@ export function AddAccountDialog({
       )}
 
       {tab === 'qr' && found.length === 0 && (
-        <label className="block cursor-pointer rounded-xl border-2 border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+        <label className="block cursor-pointer rounded-xl border-2 border-dashed border-line p-8 text-center text-sm text-muted">
           Choose a screenshot of the QR code
           <input
             type="file"
@@ -223,7 +223,7 @@ export function AddAccountDialog({
           <p className="text-sm">Found {found.length} new account(s):</p>
           <ul className="max-h-48 space-y-1 overflow-auto text-sm">
             {found.map((a, i) => (
-              <li key={i} className="rounded-lg bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+              <li key={i} className="rounded-lg bg-surface-muted px-3 py-1.5">
                 {a.issuer || '—'} · {a.label}
               </li>
             ))}
@@ -234,7 +234,7 @@ export function AddAccountDialog({
         </div>
       )}
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
     </Dialog>
   );
 }

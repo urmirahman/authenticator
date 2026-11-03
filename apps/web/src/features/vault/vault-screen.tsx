@@ -49,7 +49,7 @@ export function VaultScreen() {
     <button
       key={id}
       onClick={() => setFolder(id)}
-      className={`rounded-full px-3 py-1 text-sm ${folder === id ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-800'}`}
+      className={`rounded-full px-3 py-1 text-sm ${folder === id ? 'bg-accent text-accent-fg' : 'bg-surface-muted'}`}
     >
       {label}
     </button>
@@ -78,11 +78,11 @@ export function VaultScreen() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {chip(ALL, 'All')}
         {vault.folders.map((f) => chip(f.id, f.data.name))}
-        <button onClick={addFolder} className="rounded-full px-3 py-1 text-sm text-indigo-600">
+        <button onClick={addFolder} className="rounded-full px-3 py-1 text-sm text-accent">
           + Folder
         </button>
         {folder !== ALL && (
-          <button onClick={editFolder} className="rounded-full px-3 py-1 text-sm text-slate-500">
+          <button onClick={editFolder} className="rounded-full px-3 py-1 text-sm text-muted">
             Edit folder
           </button>
         )}
@@ -94,7 +94,7 @@ export function VaultScreen() {
         onEdit={(a) => setDialog({ editing: a })}
       />
 
-      <p className="mt-6 flex items-center gap-2 text-xs text-slate-400">
+      <p className="mt-6 flex items-center gap-2 text-xs text-muted">
         {vault.syncing
           ? 'Syncing…'
           : vault.lastSyncedAt
@@ -103,7 +103,7 @@ export function VaultScreen() {
         <button className="underline" onClick={vault.sync}>
           Sync now
         </button>
-        {vault.error && <span className="text-red-600">{vault.error}</span>}
+        {vault.error && <span className="text-danger">{vault.error}</span>}
       </p>
 
       {dialog && (

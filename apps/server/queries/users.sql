@@ -22,3 +22,7 @@ VALUES ($1, $2, $3, $4, $5) RETURNING *;
 
 -- name: ListIdentitiesByUser :many
 SELECT * FROM identities WHERE user_id = $1 ORDER BY created_at;
+
+-- name: SessionSignedInAt :one
+-- When this sign-in happened: the first session row of the refresh-token family (rotation adds rows).
+SELECT min(created_at)::timestamptz AS signed_in_at FROM sessions WHERE family_id = $1 AND user_id = $2;

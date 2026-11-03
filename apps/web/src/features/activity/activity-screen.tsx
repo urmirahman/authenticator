@@ -28,18 +28,18 @@ export function ActivityScreen() {
   return (
     <>
       <PageTitle>Activity</PageTitle>
-      <ul className="divide-y divide-slate-200 rounded-xl bg-white ring-1 ring-slate-200 dark:divide-slate-800 dark:bg-slate-900 dark:ring-slate-800">
+      <ul className="divide-y divide-line rounded-xl bg-surface ring-1 ring-line">
         {events.map((e) => (
           <li key={e.id} className="p-3 text-sm">
             <p className="font-medium">{activityLabel(e.action)}</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted">
               {new Date(e.createdAt).toLocaleString()} {e.ip && `· ${e.ip}`}{' '}
               {e.userAgent && `· ${e.userAgent.slice(0, 60)}`}
             </p>
           </li>
         ))}
         {!loading && events.length === 0 && (
-          <li className="p-3 text-sm text-slate-500">No activity yet.</li>
+          <li className="p-3 text-sm text-muted">No activity yet.</li>
         )}
       </ul>
       {next && (

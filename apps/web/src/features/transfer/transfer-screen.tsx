@@ -53,7 +53,7 @@ export function TransferScreen() {
         <img
           src={images[page]}
           alt="Transfer QR code"
-          className="mx-auto rounded-xl bg-white"
+          className="mx-auto rounded-xl bg-surface"
           width={320}
           height={320}
         />
@@ -77,18 +77,18 @@ export function TransferScreen() {
   return (
     <div className="space-y-4">
       <PageTitle>Transfer to another phone</PageTitle>
-      <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200 dark:bg-amber-950 dark:text-amber-100 dark:ring-amber-900">
+      <div className="rounded-xl bg-accent-soft p-4 text-sm text-fg ring-1 ring-warning/40">
         ⚠️ These QR codes contain your secret keys unencrypted. Anyone who sees or photographs them
         can generate your codes. Make sure nobody is watching and you are not screen-sharing.
       </div>
       <div className="flex gap-3 text-sm">
         <button
-          className="text-indigo-600"
+          className="text-accent"
           onClick={() => setSelected(new Set(vault.accounts.map((a) => a.id)))}
         >
           Select all
         </button>
-        <button className="text-slate-500" onClick={() => setSelected(new Set())}>
+        <button className="text-muted" onClick={() => setSelected(new Set())}>
           Clear
         </button>
       </div>
@@ -97,7 +97,7 @@ export function TransferScreen() {
           <li key={a.id}>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={selected.has(a.id)} onChange={() => toggle(a.id)} />
-              {a.data.issuer} <span className="text-slate-400">{a.data.label}</span>
+              {a.data.issuer} <span className="text-muted">{a.data.label}</span>
             </label>
           </li>
         ))}

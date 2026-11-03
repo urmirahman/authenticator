@@ -5,12 +5,12 @@ import type { ReactNode } from 'react';
 /** Small app-only UI bits. Shared, cross-app components live in packages/ui. */
 
 export const inputClass =
-  'w-full rounded-lg bg-white px-3 py-2 text-sm ring-1 ring-slate-300 outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:ring-slate-700';
+  'w-full rounded-lg bg-surface px-3 py-2 text-sm ring-1 ring-line outline-none focus:ring-2 focus:ring-accent';
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-slate-500">{label}</span>
+      <span className="text-xs font-medium text-muted">{label}</span>
       {children}
     </label>
   );
@@ -33,16 +33,12 @@ export function Dialog({
       <div
         role="dialog"
         aria-label={title}
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900"
+        className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{title}</h2>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="text-slate-400 hover:text-slate-700"
-          >
+          <button onClick={onClose} aria-label="Close" className="text-muted hover:text-fg">
             ✕
           </button>
         </div>

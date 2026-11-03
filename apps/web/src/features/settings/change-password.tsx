@@ -33,7 +33,7 @@ export function ChangePasswordForm() {
   };
 
   if (vault.status !== 'unlocked')
-    return <p className="text-sm text-slate-500">Unlock the vault first.</p>;
+    return <p className="text-sm text-muted">Unlock the vault first.</p>;
   return (
     <form onSubmit={submit} className="space-y-3">
       <Field label="Current master password">

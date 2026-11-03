@@ -11,7 +11,7 @@ import { updateSettings, useSettings, type Settings } from './settings';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-3 rounded-2xl bg-white p-5 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+    <section className="space-y-3 rounded-2xl bg-surface p-5 ring-1 ring-line">
       <h2 className="font-semibold">{title}</h2>
       {children}
     </section>
@@ -114,12 +114,12 @@ export function SettingsScreen() {
             <li key={p.id} className="flex items-center">
               <span>
                 {p.name}{' '}
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-muted">
                   added {new Date(p.createdAt).toLocaleDateString()}
                 </span>
               </span>
               <button
-                className="ml-auto mr-3 text-indigo-600"
+                className="ml-auto mr-3 text-accent"
                 onClick={() => {
                   const name = prompt('Rename passkey', p.name)?.trim();
                   if (name && name !== p.name) api.passkeys.rename(p.id, name).then(loadPasskeys);
@@ -128,7 +128,7 @@ export function SettingsScreen() {
                 Rename
               </button>
               <button
-                className="text-red-600"
+                className="text-danger"
                 onClick={() =>
                   confirm(`Remove ${p.name}?`) && api.passkeys.remove(p.id).then(loadPasskeys)
                 }
@@ -137,7 +137,7 @@ export function SettingsScreen() {
               </button>
             </li>
           ))}
-          {passkeys.length === 0 && <li className="text-slate-500">No passkeys yet.</li>}
+          {passkeys.length === 0 && <li className="text-muted">No passkeys yet.</li>}
         </ul>
         {passkeysSupported() && (
           <Button variant="secondary" onClick={addPasskey}>

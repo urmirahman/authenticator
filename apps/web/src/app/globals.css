@@ -1,9 +1,68 @@
 @import 'tailwindcss';
+/* Bloom design tokens (colors, radius, fonts) shared with mobile. */
+@import '@repo/brand/tokens.css';
 /* Let Tailwind see class names used inside the shared UI package. */
 @source '../../../../packages/ui/src';
 /* dark: classes apply when <html class="dark"> (set by useApplyTheme). */
 @custom-variant dark (&:where(.dark, .dark *));
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+  @apply bg-bg font-sans text-fg antialiased;
+}
+
+/* Visible keyboard focus everywhere (mouse clicks don't show it). */
+:focus-visible {
+  outline: 2px solid var(--bloom-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Long-form legal/help content rendered from markdown. */
+.prose-bloom h1 {
+  @apply mb-4 text-3xl font-bold tracking-tight;
+}
+.prose-bloom h2 {
+  @apply mt-10 mb-3 text-xl font-semibold;
+}
+.prose-bloom h3 {
+  @apply mt-6 mb-2 font-semibold;
+}
+.prose-bloom p,
+.prose-bloom ul,
+.prose-bloom ol {
+  @apply mb-4 leading-7 text-fg/90;
+}
+.prose-bloom ul {
+  @apply list-disc pl-6;
+}
+.prose-bloom ol {
+  @apply list-decimal pl-6;
+}
+.prose-bloom a {
+  @apply text-accent underline underline-offset-2;
+}
+.prose-bloom code {
+  @apply rounded bg-surface-muted px-1 py-0.5 font-mono text-sm;
+}
+.prose-bloom table {
+  @apply mb-6 w-full text-left text-sm;
+}
+.prose-bloom th,
+.prose-bloom td {
+  @apply border-b border-line py-2 pr-4 align-top;
+}
+.prose-bloom mark {
+  @apply rounded bg-warning/20 px-1 text-fg;
+}
+.prose-bloom blockquote {
+  @apply mb-4 border-l-4 border-accent/50 pl-4 text-muted;
 }

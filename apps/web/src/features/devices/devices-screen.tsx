@@ -26,29 +26,27 @@ export function DevicesScreen() {
   return (
     <>
       <PageTitle>Devices</PageTitle>
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-danger">{error}</p>}
       {!devices ? (
-        <p className="text-sm text-slate-500">Loading…</p>
+        <p className="text-sm text-muted">Loading…</p>
       ) : (
         <ul className="space-y-2">
           {devices.map((d) => (
             <li
               key={d.id}
-              className="flex items-center justify-between rounded-xl bg-white p-4 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"
+              className="flex items-center justify-between rounded-xl bg-surface p-4 ring-1 ring-line"
             >
               <div>
                 <p className="font-medium">
                   {d.name}{' '}
-                  {d.id === current && (
-                    <span className="text-xs text-emerald-600">(this device)</span>
-                  )}
+                  {d.id === current && <span className="text-xs text-success">(this device)</span>}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted">
                   {d.platform} · last seen {new Date(d.lastSeenAt).toLocaleString()}
                 </p>
               </div>
               {d.id !== current && (
-                <button className="text-sm text-red-600" onClick={() => revoke(d)}>
+                <button className="text-sm text-danger" onClick={() => revoke(d)}>
                   Sign out
                 </button>
               )}

@@ -47,7 +47,19 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) remove(w http.ResponseWriter, r *http.Request) {
-	if err := h.svc.Delete(r.Context(), middleware.UserID(r.Context())); err != nil {
+	var req struct {
+		Confirm string `json:"confirm"`
+	}
+	_ = httpx.Decode(r, &req) // empty body -> empty confirm -> 400 below
+	err := h.svc.Delete(r.Context(), middleware.UserID(r.Context()), middleware.SessionID(r.Context()), req.Confirm)
+	switch {
+	case errors.Is(err, ErrConfirmPhrase):
+		httpx.Error(w, http.StatusBadRequest, "confirm_required", err.Error())
+		return
+	case errors.Is(err, ErrReauthRequired):
+		httpx.Error(w, http.StatusForbidden, "reauth_required", err.Error())
+		return
+	case err != nil:
 		httpx.Error(w, http.StatusInternalServerError, "internal", "could not delete account")
 		return
 	}

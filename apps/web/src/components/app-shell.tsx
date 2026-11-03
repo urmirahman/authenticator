@@ -62,7 +62,7 @@ export function AppShell({
             <Link
               key={n.href}
               href={n.href}
-              className={`rounded-lg px-3 py-1.5 ${pathname === n.href ? 'bg-indigo-600 text-white' : 'hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+              className={`rounded-lg px-3 py-1.5 ${pathname === n.href ? 'bg-accent text-accent-fg' : 'hover:bg-surface-muted'}`}
             >
               {n.label}
             </Link>
@@ -70,14 +70,14 @@ export function AppShell({
         </nav>
         {vault.status === 'unlocked' && (
           <button
-            className="rounded-lg px-3 py-1.5 text-sm hover:bg-slate-200 dark:hover:bg-slate-800"
+            className="rounded-lg px-3 py-1.5 text-sm hover:bg-surface-muted"
             onClick={vault.lock}
           >
             Lock
           </button>
         )}
         <button
-          className="rounded-lg px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800"
+          className="rounded-lg px-3 py-1.5 text-sm text-muted hover:bg-surface-muted"
           onClick={async () => {
             vault.lock();
             await signOut();
@@ -88,7 +88,7 @@ export function AppShell({
         </button>
       </header>
       {vault.status === 'loading' ? (
-        <p className="text-sm text-slate-500">Loading…</p>
+        <p className="text-sm text-muted">Loading…</p>
       ) : needsUnlock && locked ? (
         <UnlockScreen />
       ) : (

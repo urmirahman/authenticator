@@ -56,20 +56,20 @@ function CodeRow({ account, onEdit }: RowProps) {
   };
 
   return (
-    <li className="flex items-center gap-3 rounded-xl bg-white p-4 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+    <li className="flex items-center gap-3 rounded-xl bg-surface p-4 ring-1 ring-line">
       <IssuerBadge issuer={a.issuer || a.label} />
       <button className="min-w-0 flex-1 text-left" onClick={copy} title="Click to copy">
-        <p className="truncate text-sm text-slate-500">
-          {a.issuer} {a.label && <span className="text-slate-400">· {a.label}</span>}
+        <p className="truncate text-sm text-muted">
+          {a.issuer} {a.label && <span className="text-muted">· {a.label}</span>}
         </p>
         <p className="font-mono text-2xl tracking-widest">
           {code.replace(/(\d{3})(?=\d)/g, '$1 ')}
         </p>
-        {copied && <p className="text-xs text-emerald-600">Copied</p>}
+        {copied && <p className="text-xs text-success">Copied</p>}
       </button>
       {isHotp ? (
         <button
-          className="rounded-lg px-2 py-1 text-xs text-indigo-600 ring-1 ring-indigo-200 disabled:opacity-50"
+          className="rounded-lg px-2 py-1 text-xs text-accent ring-1 ring-accent/30 disabled:opacity-50"
           onClick={nextHotp}
           disabled={advancing}
           title={`Counter ${a.counter ?? 0}`}
@@ -80,7 +80,7 @@ function CodeRow({ account, onEdit }: RowProps) {
         <CountdownRing remaining={live.remaining} period={a.period} />
       )}
       <button
-        className="text-sm text-slate-400 hover:text-slate-700"
+        className="text-sm text-muted hover:text-fg"
         onClick={() => onEdit(account)}
         aria-label="Edit"
       >
@@ -94,7 +94,7 @@ export function CodeList(
   props: { accounts: Decrypted<AccountData>[] } & Omit<RowProps, 'account'>,
 ) {
   if (props.accounts.length === 0) {
-    return <p className="py-10 text-center text-sm text-slate-500">No accounts here yet.</p>;
+    return <p className="py-10 text-center text-sm text-muted">No accounts here yet.</p>;
   }
   return (
     <ul className="space-y-3">

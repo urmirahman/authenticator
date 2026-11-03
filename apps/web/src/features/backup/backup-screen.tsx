@@ -87,15 +87,12 @@ export function BackupScreen() {
   return (
     <div className="space-y-4">
       <PageTitle>Encrypted backups</PageTitle>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-muted">
         Backups are encrypted in this browser with a separate backup password. We cannot open them
         or reset that password.
       </p>
 
-      <form
-        onSubmit={create}
-        className="space-y-3 rounded-2xl bg-white p-5 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"
-      >
+      <form onSubmit={create} className="space-y-3 rounded-2xl bg-surface p-5 ring-1 ring-line">
         <h2 className="font-semibold">New backup ({vault.accounts.length} accounts)</h2>
         <Field label="Name (optional)">
           <input name="name" className={inputClass} />
@@ -125,26 +122,23 @@ export function BackupScreen() {
 
       <ul className="space-y-2">
         {backups.map((b) => (
-          <li
-            key={b.id}
-            className="rounded-xl bg-white p-4 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"
-          >
+          <li key={b.id} className="rounded-xl bg-surface p-4 ring-1 ring-line">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="font-medium">{b.name}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted">
                   {new Date(b.createdAt).toLocaleString()} · {b.itemCount} accounts ·{' '}
                   {(b.sizeBytes / 1024).toFixed(1)} KB
                 </p>
               </div>
               <div className="flex gap-3 text-sm">
                 <button
-                  className="text-indigo-600"
+                  className="text-accent"
                   onClick={() => setRestoreId(restoreId === b.id ? null : b.id)}
                 >
                   Restore
                 </button>
-                <button className="text-red-600" onClick={() => remove(b)}>
+                <button className="text-danger" onClick={() => remove(b)}>
                   Delete
                 </button>
               </div>
@@ -165,7 +159,7 @@ export function BackupScreen() {
             )}
           </li>
         ))}
-        {backups.length === 0 && <li className="text-sm text-slate-500">No backups yet.</li>}
+        {backups.length === 0 && <li className="text-sm text-muted">No backups yet.</li>}
       </ul>
       {msg && <p className="text-sm">{msg}</p>}
     </div>

@@ -46,23 +46,20 @@ export function SignInCard() {
   };
 
   return (
-    <Card className="w-full max-w-sm space-y-3 dark:bg-slate-900 dark:ring-slate-800">
+    <Card className="w-full max-w-sm space-y-3">
       <h1 className="text-xl font-semibold">Sign in</h1>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-muted">
         Your codes are encrypted on this device before they sync.
       </p>
       <Button onClick={passkey}>Sign in with a passkey</Button>
-      <div className="py-1 text-center text-xs text-slate-400">or</div>
+      <div className="py-1 text-center text-xs text-muted">or</div>
       {PROVIDERS.map((p) => (
         <Button key={p.id} variant="secondary" onClick={() => startOAuth(p.id)}>
           {p.label}
         </Button>
       ))}
       {DEV_AUTH && (
-        <form
-          onSubmit={devLogin}
-          className="space-y-2 border-t border-dashed border-slate-300 pt-3"
-        >
+        <form onSubmit={devLogin} className="space-y-2 border-t border-dashed border-line pt-3">
           <Field label="Dev login (DEV_AUTH only)">
             <input
               name="email"
@@ -75,7 +72,7 @@ export function SignInCard() {
           <Button variant="ghost">Dev sign in</Button>
         </form>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </Card>
   );
 }
