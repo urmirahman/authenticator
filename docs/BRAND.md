@@ -47,3 +47,12 @@ Radius 8 / 12 / 16 / 24 (cards 16, buttons 12, pills full). Spacing on a 4-pt gr
 
 Calm, plain, honest. Explain security in everyday words, never overclaim ("we can't read your codes" — true;
 no "military-grade", no certifications we don't hold). Short sentences, second person, no fear-mongering.
+
+## Mobile UI (cozy)
+
+- **Feel:** minimal and warm. Off-white paper (`ink-50`) in light, deep charcoal (`ink-950`) in dark; one rose accent, violet only in gradients (avatar, logo).
+- **Shape:** cards use radius 24 (xl) with a hairline border, buttons radius 16, pills fully round. Generous padding (20–24) and 24 between sections.
+- **Lists:** settings-style groups with a small uppercase title, icon bubbles (accent on `accentSoft`), chevrons for navigation and ↗ for web pages.
+- **Codes:** large monospace digits in the accent color, grouped 3-3 (4-4 for 8 digits), turning red in the last 5 seconds; countdown ring with seconds.
+- **Motion:** 260 ms fade-and-rise on first appearance, soft pulse for skeletons; none of it when Reduce Motion is on. Haptics: selection tick on taps, success on copy/save, warning on a wrong password.
+- **Microcopy:** short, kind, human ("Nothing blooming yet", "Welcome back", "Opening your vault…"). Never blame the user; say what to do next.

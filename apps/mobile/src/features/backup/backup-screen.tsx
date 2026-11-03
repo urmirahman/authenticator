@@ -11,7 +11,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
 import { Prompt } from '@/components/prompt';
 import { useColors } from '@/components/theme';
-import { Button, Input, Label, Muted, Screen, Section } from '@/components/ui';
+import {
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  Label,
+  Muted,
+  Screen,
+  Section,
+  styles as ui,
+} from '@/components/ui';
 import { useVault } from '@/features/vault/vault-store';
 import { api } from '@/lib/api';
 
@@ -94,10 +104,10 @@ export function BackupScreen() {
   return (
     <Screen>
       <Muted>
-        Encrypted on this phone with a separate backup password. We can&apos;t open it or reset that
-        password.
+        Sealed on this phone with its own backup password. Even we can&apos;t open it, so keep that
+        password somewhere safe.
       </Muted>
-      <Section title={`New backup (${vault.accounts.length} accounts)`}>
+      <Section title={`New backup · ${vault.accounts.length} accounts`}>
         <Label>Name (optional)</Label>
         <Input value={pw.name} onChangeText={(name) => setPw({ ...pw, name })} />
         <Label>Backup password</Label>
@@ -118,10 +128,12 @@ export function BackupScreen() {
           disabled={busy || vault.accounts.length === 0}
         />
       </Section>
-      {busy && <ActivityIndicator />}
+      {busy && <ActivityIndicator color={c.accent} />}
       {msg && <Text style={{ color: c.text }}>{msg}</Text>}
+      {backups.length > 0 && <Text style={[ui.groupTitle, { color: c.muted }]}>Your backups</Text>}
       {backups.map((b) => (
-        <Section key={b.id} title={b.name}>
+        <Card key={b.id} style={{ gap: 10 }}>
+          <Text style={{ color: c.text, fontWeight: '600', fontSize: 16 }}>{b.name}</Text>
           <Muted>
             {new Date(b.createdAt).toLocaleString()} · {b.itemCount} accounts ·{' '}
             {(b.sizeBytes / 1024).toFixed(1)} KB
@@ -134,9 +146,14 @@ export function BackupScreen() {
               <Button variant="danger" title="Delete" onPress={() => remove(b)} />
             </View>
           </View>
-        </Section>
+        </Card>
       ))}
-      {backups.length === 0 && <Muted>No backups yet.</Muted>}
+      {backups.length === 0 && (
+        <EmptyState
+          title="No backups yet"
+          body="A backup is a sealed copy of your vault. Make one before changing phones."
+        />
+      )}
       <Prompt
         visible={restoreId !== null}
         title="Backup password"

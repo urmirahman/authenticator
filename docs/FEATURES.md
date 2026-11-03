@@ -93,6 +93,10 @@ Google Authenticator parity plus extras. **Phase** = when it ships. **Status**: 
 | Help & About (FAQ), links to Privacy/Cookies/Terms/Security on the web                | ✅                                         |
 | Delete account (master password check + DELETE, re-auth handling)                     | ✅                                         |
 | Tablet / landscape (content width capped), accessibility roles and labels             | ✅                                         |
+| Cozy redesign: bottom tabs (Codes, Profile, Settings), cards, empty states, skeletons | ✅                                         |
+| Profile: avatar, name (editable), linked sign-ins, passkeys, vault stats, quick links | ✅                                         |
+| Grouped settings; new prefs: haptics, digit grouping, code size, show next code       | ✅                                         |
+| Haptics and gentle animations (respect Reduce Motion)                                 | ✅                                         |
 
 ## Launch prep (web)
 

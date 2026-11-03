@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Text } from 'react-native';
-import { Button, Input, Label, Screen, styles as ui } from '@/components/ui';
+import { Button, EmptyState, Input, Label, Screen, styles as ui } from '@/components/ui';
 import { FolderPicker } from './folder-picker';
 import { useVault } from './vault-store';
 
@@ -17,7 +17,12 @@ export function EditAccountScreen() {
   }));
   const [error, setError] = useState<string | null>(null);
 
-  if (!item) return <Text>Account not found.</Text>;
+  if (!item)
+    return (
+      <Screen>
+        <EmptyState title="Account not found" body="It may have been deleted on another device." />
+      </Screen>
+    );
 
   const save = async () => {
     try {
