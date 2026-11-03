@@ -88,3 +88,24 @@ Google Authenticator parity plus extras. **Phase** = when it ships. **Status**: 
 | Transfer QR (select, warning, reveal, hide on background)                             | ✅                                         |
 | Screenshot block, app-switcher cover, biometric re-open                               | ✅                                         |
 | Passkeys on mobile                                                                    | ⬜                                         |
+| Bloom branding: theme tokens (light/dark), app name, icon, adaptive icon, splash      | ✅                                         |
+| Onboarding (3-step intro, strength meter, "can't recover" checkbox)                   | ✅                                         |
+| Help & About (FAQ), links to Privacy/Cookies/Terms/Security on the web                | ✅                                         |
+| Delete account (master password check + DELETE, re-auth handling)                     | ✅                                         |
+| Tablet / landscape (content width capped), accessibility roles and labels             | ✅                                         |
+
+## Launch prep (web)
+
+| Feature                                                                           | Status                         |
+| --------------------------------------------------------------------------------- | ------------------------------ |
+| Bloom brand: logo, wordmark, tokens, light/dark across all screens                | ✅                             |
+| Landing page, public header/footer                                                | ✅                             |
+| Privacy, Cookies, Terms, Security, About, Help pages; `/.well-known/security.txt` | ✅ (TODO placeholders to fill) |
+| 404, error and loading pages                                                      | ✅                             |
+| Onboarding explainer + printable recovery kit                                     | ✅                             |
+| Account deletion (`DELETE /v1/users/me`, re-auth, ADR 35)                         | ✅                             |
+| Responsive nav (drawer + bottom bar), accessible dialogs, skip link               | ✅                             |
+| SEO: metadata, Open Graph image, sitemap, robots, PWA manifest, icons             | ✅                             |
+| Security headers (see next.config.ts)                                             | ✅                             |
+
+See [ROADMAP.md](ROADMAP.md) for what's next and what needs a decision.

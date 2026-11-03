@@ -49,3 +49,14 @@
     - `DELETE /v1/users/me` with `{ "confirm": "DELETE" }`; the current session family must have started (a real sign-in, not a token refresh) within the last 10 minutes, otherwise `403 reauth_required`.
     - _Why:_ the server can't check the master password (it never sees it), so "re-auth" means signing in again with Google/Apple/passkey. A stolen refresh token alone can't destroy an account. The client UI additionally asks for the master password locally as a "are you really sure" step, which proves nothing to the server but prevents accidents.
     - Deletion cascades in Postgres (identities, sessions, devices, passkeys, vaults, items, sync log, backups, audit). Database backups age out on their own schedule (privacy policy TODO).
+
+36. **Brand and design tokens live in `@repo/brand`; the product is "Bloom Authenticator".**
+    - One TypeScript source (`tokens.ts`) feeds the mobile theme; `tokens.css` mirrors it as Tailwind v4 `@theme` + CSS variables for the web. A unit test fails if the two drift or if text/accent pairs miss WCAG AA contrast.
+    - Screens use semantic names (`bg`, `surface`, `text`, `accent`, `danger`…) instead of raw colors, so light/dark and future re-theming touch one file.
+    - Only user-facing names changed. The repo, package scopes (`@authenticator/*`), Expo slug/scheme and bundle id `dev.urmirahman.authenticator` stay, because OAuth clients and store records are tied to them.
+    - Icons are SVG sources exported to PNG by `packages/brand/scripts/export-icons.mjs` (sharp), never hand-edited.
+
+37. **Legal and help text lives in `@repo/content`, with explicit TODO placeholders.**
+    - Web renders it as pages (Markdown via `marked`); mobile renders the FAQ natively and opens legal pages on the web (`EXPO_PUBLIC_WEB_URL`) so there is one published version.
+    - Unknown facts (operator, address, emails, domain, jurisdiction, retention…) use `todo()`, which shows highlighted on the page; `pendingTodos()` lists them and a test keeps the list visible. The texts are drafts, not legal advice; a lawyer should review before launch.
+    - No cookie banner: Bloom sets no cookies and uses no tracking; the cookie policy describes the browser storage it does use.

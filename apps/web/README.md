@@ -25,3 +25,11 @@ The key lives only in memory; reload or auto-lock forgets it.
 
 Tests: `pnpm -F @authenticator/web test` (codec + WebAuthn JSON). With the API running with DEV_AUTH,
 `API_E2E_URL=http://localhost:8787 pnpm -F @authenticator/web test` also runs a live end-to-end vault test.
+
+## Public pages and branding
+
+- `/` is the landing page (signed-in visitors go straight to `/codes`). Public pages live in `src/app/(public)/` and render text from `@repo/content`.
+- Legal text has highlighted **TODO** placeholders; fill them in `packages/content/src/site.ts` and the legal files.
+- Set `NEXT_PUBLIC_SITE_URL` (your real domain) so Open Graph, sitemap and `security.txt` use absolute URLs.
+- Colors come from `@repo/brand/tokens.css`: use `bg-surface`, `text-fg`, `text-muted`, `bg-accent`… not raw Tailwind colors.
+- Regenerate icons after changing the logo: `pnpm -F @repo/brand export-icons`.

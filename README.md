@@ -1,6 +1,6 @@
-# Authenticator
+# Bloom Authenticator
 
-A portfolio-grade authenticator app: **TOTP codes**, **passkeys (WebAuthn)** and **end-to-end encrypted sync** across web, iOS and Android.
+**Bloom** is a portfolio-grade authenticator app: **TOTP codes**, **passkeys (WebAuthn)** and **end-to-end encrypted sync** across web, iOS and Android.
 
 | Part                                                   | Tech                                                                                   |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------- |
@@ -11,6 +11,9 @@ A portfolio-grade authenticator app: **TOTP codes**, **passkeys (WebAuthn)** and
 | `packages/api-client`                                  | Typed fetch client shared by web + mobile                                              |
 | `packages/types`                                       | Shared DTOs (mirror the Go JSON)                                                       |
 | `packages/ui`                                          | Shared web React components                                                            |
+| `packages/brand`                                       | Bloom logo, icons and design tokens (web CSS + mobile theme)                           |
+| `packages/content`                                     | Privacy, cookies, terms, security, about and FAQ text (with TODO placeholders)         |
+| `packages/vault`                                       | Shared vault logic: items, sync, backups, preferences, password strength               |
 | `packages/eslint-config`, `packages/typescript-config` | Shared tooling                                                                         |
 | Database                                               | PostgreSQL 16 (Docker)                                                                 |
 
@@ -46,6 +49,8 @@ Handy shortcuts: `pnpm server`, `pnpm web`, `pnpm mobile`, `pnpm ios`, `pnpm and
 - [Database](docs/DATABASE.md): tables and why they exist
 - [Decisions](docs/DECISIONS.md): short ADRs
 - [Features](docs/FEATURES.md): feature list by phase and status
+- [Roadmap](docs/ROADMAP.md): what's next, and decisions that need the owner
+- [Brand](docs/BRAND.md): name, logo, colors, type and voice
 - [OAuth setup](docs/OAUTH_SETUP.md): creating Google / Facebook / Apple apps
 - [API spec](apps/server/api/openapi.yaml): OpenAPI 3.1
 - [Server guide](apps/server/README.md): a tour of the Go code for learners
