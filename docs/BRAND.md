@@ -1,0 +1,49 @@
+# Bloom Authenticator — brand
+
+**Name:** Bloom Authenticator (short: **Bloom**; code/slugs: `bloom`). Repo, package scopes and bundle id
+`dev.urmirahman.authenticator` stay unchanged (OAuth clients depend on them).
+
+**Idea:** a six-petal flower around a countdown ring. Petals = your accounts opening up; the ring = the
+30-second TOTP timer; the white core reads as a lock/keyhole.
+
+## Logo files (`packages/brand/assets`)
+
+| File                      | Use                                                           |
+| ------------------------- | ------------------------------------------------------------- |
+| `logo-mark.svg`           | Default mark (favicons, headers, avatars)                     |
+| `wordmark.svg`            | Mark + "Bloom AUTHENTICATOR" (text uses `currentColor`)       |
+| `logo-mono.svg`           | One color (`currentColor`), for print / single-color contexts |
+| `app-icon.svg`            | 1024² app icon on rose-50 background                          |
+| `adaptive-foreground.svg` | Android adaptive icon / splash (transparent, safe-zone sized) |
+
+PNG exports: `pnpm -F @repo/brand export-icons` (sharp) writes web favicons/PWA icons/OG image and Expo icon/splash.
+Rules: keep clear space ≥ one petal width; don't recolor petals except the mono version; minimum size 16 px (mark) / 120 px (wordmark).
+The art is an original placeholder; a designer polish pass is welcome before launch.
+
+## Palette (`packages/brand/src/tokens.ts`, mirrored in `tokens.css`)
+
+- **Rose (accent):** 600 `#dc2560` on light, 400 `#fb7195` on dark. Soft backgrounds: rose-50 / `#2a1520`.
+- **Violet:** `#8b5cf6`, only in the logo gradient and small highlights.
+- **Ink (neutrals):** off-white `#faf8f7` → charcoal `#17151a` / `#0f0d11`.
+- **Semantic:** success `#15803d`, warning `#b45309`, danger `#dc2626` (lighter variants in dark mode).
+  Contrast is unit-tested (WCAG AA: body ≥ 7:1, muted and accent ≥ 4.5:1).
+
+## Typography
+
+Rounded system sans (`ui-rounded`, SF Pro Rounded, Nunito fallback) for UI; tabular monospace for codes.
+Scale: 12 / 14 / 16 / 18 / 22 / 28 / 44.
+
+## Shape and spacing
+
+Radius 8 / 12 / 16 / 24 (cards 16, buttons 12, pills full). Spacing on a 4-pt grid (4, 8, 12, 16, 24, 32, 48).
+
+## Using tokens
+
+- **Web:** `@import '@repo/brand/tokens.css'` → Tailwind classes `bg-bg`, `bg-surface`, `text-fg`, `text-muted`,
+  `border-line`, `bg-accent`, `text-accent`, `bg-accent-soft`, `rose-*`, `ink-*`. Dark mode via `.dark` on `<html>`.
+- **Mobile:** `import { light, dark, space, radius, font } from '@repo/brand'` (see `apps/mobile/src/components/theme.ts`).
+
+## Voice
+
+Calm, plain, honest. Explain security in everyday words, never overclaim ("we can't read your codes" — true;
+no "military-grade", no certifications we don't hold). Short sentences, second person, no fear-mongering.

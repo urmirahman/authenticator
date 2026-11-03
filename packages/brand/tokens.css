@@ -1,0 +1,87 @@
+/*
+ * Bloom design tokens as CSS variables + Tailwind v4 theme.
+ * Source of truth: src/tokens.ts (tokens.test.ts keeps them in sync).
+ * Usage in an app's globals.css:  @import '@repo/brand/tokens.css';
+ */
+@theme {
+  --color-rose-50: #fff1f4;
+  --color-rose-100: #ffe4ea;
+  --color-rose-200: #fecdd9;
+  --color-rose-300: #fda4b9;
+  --color-rose-400: #fb7195;
+  --color-rose-500: #f04473;
+  --color-rose-600: #dc2560;
+  --color-rose-700: #b9184f;
+  --color-rose-800: #9a1747;
+  --color-rose-900: #831843;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+  --color-violet-600: #7c3aed;
+  --color-ink-0: #ffffff;
+  --color-ink-50: #faf8f7;
+  --color-ink-100: #f3f0ee;
+  --color-ink-200: #e7e2df;
+  --color-ink-300: #d3ccc8;
+  --color-ink-400: #a39b97;
+  --color-ink-500: #78716c;
+  --color-ink-600: #57524f;
+  --color-ink-700: #3a3638;
+  --color-ink-800: #242126;
+  --color-ink-900: #17151a;
+  --color-ink-950: #0f0d11;
+
+  /* Semantic, theme-aware colors: bg-bg, bg-surface, text-fg, text-muted, border-line, bg-accent ... */
+  --color-bg: var(--bloom-bg);
+  --color-surface: var(--bloom-surface);
+  --color-surface-muted: var(--bloom-surface-muted);
+  --color-line: var(--bloom-border);
+  --color-fg: var(--bloom-text);
+  --color-muted: var(--bloom-text-muted);
+  --color-accent: var(--bloom-accent);
+  --color-accent-fg: var(--bloom-accent-text);
+  --color-accent-soft: var(--bloom-accent-soft);
+  --color-danger: var(--bloom-danger);
+  --color-success: var(--bloom-success);
+  --color-warning: var(--bloom-warning);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --font-sans:
+    ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+}
+
+:root {
+  --bloom-bg: #faf8f7;
+  --bloom-surface: #ffffff;
+  --bloom-surface-muted: #f3f0ee;
+  --bloom-border: #e7e2df;
+  --bloom-text: #17151a;
+  --bloom-text-muted: #78716c;
+  --bloom-accent: #dc2560;
+  --bloom-accent-text: #ffffff;
+  --bloom-accent-soft: #fff1f4;
+  --bloom-danger: #dc2626;
+  --bloom-success: #15803d;
+  --bloom-warning: #b45309;
+  color-scheme: light;
+}
+
+.dark {
+  --bloom-bg: #0f0d11;
+  --bloom-surface: #17151a;
+  --bloom-surface-muted: #242126;
+  --bloom-border: #3a3638;
+  --bloom-text: #faf8f7;
+  --bloom-text-muted: #a39b97;
+  --bloom-accent: #fb7195;
+  --bloom-accent-text: #0f0d11;
+  --bloom-accent-soft: #2a1520;
+  --bloom-danger: #f87171;
+  --bloom-success: #4ade80;
+  --bloom-warning: #fbbf24;
+  color-scheme: dark;
+}
