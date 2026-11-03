@@ -16,6 +16,16 @@ export interface User {
   createdAt: ISODate;
 }
 
+/** Profile: which OAuth providers are linked and how many passkeys exist. */
+export interface SignInMethods {
+  providers: Array<{
+    provider: 'google' | 'facebook' | 'apple';
+    email?: string;
+    linkedAt: ISODate;
+  }>;
+  passkeys: number;
+}
+
 export interface AuthTokens {
   accessToken: string;
   /** Rotating refresh token: every refresh returns a new one and revokes the old one. */

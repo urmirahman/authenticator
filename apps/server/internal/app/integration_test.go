@@ -213,6 +213,14 @@ func TestIntegrationVaultSyncFlow(t *testing.T) {
 	if s := c.do("GET", "/users/me/export", nil, &exp); s != 200 || len(exp.VaultItems) != 1 || len(exp.Backups) != 1 || len(exp.Passkeys) != 1 {
 		t.Fatalf("export: %d %+v", s, exp)
 	}
+	// Profile: dev sign-in links no OAuth provider; the passkey above is counted.
+	var methods struct {
+		Providers []any
+		Passkeys  int
+	}
+	if s := c.do("GET", "/users/me/sign-in-methods", nil, &methods); s != 200 || methods.Providers == nil || methods.Passkeys != 1 {
+		t.Fatalf("sign-in methods: %d %+v", s, methods)
+	}
 	if s := c.do("DELETE", "/backups/"+bk.ID.String(), nil, nil); s != 204 {
 		t.Fatalf("delete backup: %d", s)
 	}

@@ -12,6 +12,7 @@ import type {
   SyncPullResponse,
   SyncPushRequest,
   SyncPushResponse,
+  SignInMethods,
   User,
   Vault,
   VaultItemKind,
@@ -99,6 +100,7 @@ export function createApiClient({
     users: {
       me: () => request<User>('GET', '/users/me'),
       update: (displayName: string) => request<User>('PATCH', '/users/me', { displayName }),
+      signInMethods: () => request<SignInMethods>('GET', '/users/me/sign-in-methods'),
       /**
        * Permanent. Needs confirm = "DELETE" and a sign-in from the last 10 minutes;
        * otherwise ApiError 403 code "reauth_required" (sign in again, then retry).

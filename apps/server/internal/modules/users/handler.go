@@ -78,3 +78,13 @@ func (h *Handler) export(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", `attachment; filename="authenticator-data-export.json"`)
 	httpx.JSON(w, http.StatusOK, e)
 }
+
+// signInMethods: GET /users/me/sign-in-methods — linked providers + passkey count for Profile.
+func (h *Handler) signInMethods(w http.ResponseWriter, r *http.Request) {
+	m, err := h.svc.SignInMethods(r.Context(), middleware.UserID(r.Context()))
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "internal", "could not load sign-in methods")
+		return
+	}
+	httpx.JSON(w, http.StatusOK, m)
+}

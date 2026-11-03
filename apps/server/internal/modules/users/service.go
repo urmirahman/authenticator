@@ -65,3 +65,20 @@ func (s *Service) Delete(ctx context.Context, id, sessionFamily uuid.UUID, confi
 	}
 	return s.repo.Delete(ctx, id)
 }
+
+// SignInMethods lists linked providers (oldest first) and the passkey count.
+func (s *Service) SignInMethods(ctx context.Context, id uuid.UUID) (SignInMethods, error) {
+	ids, err := s.repo.Identities(ctx, id)
+	if err != nil {
+		return SignInMethods{}, err
+	}
+	n, err := s.repo.PasskeyCount(ctx, id)
+	if err != nil {
+		return SignInMethods{}, err
+	}
+	out := SignInMethods{Providers: make([]LinkedProvider, 0, len(ids)), Passkeys: n}
+	for _, i := range ids {
+		out.Providers = append(out.Providers, LinkedProvider{Provider: i.Provider, Email: i.Email.String, LinkedAt: i.CreatedAt})
+	}
+	return out, nil
+}

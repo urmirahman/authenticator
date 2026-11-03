@@ -8,4 +8,5 @@ func (h *Handler) Routes(r chi.Router) {
 	r.Patch("/me", h.update)
 	r.Delete("/me", h.remove)
 	r.Get("/me/export", h.export)
+	r.Get("/me/sign-in-methods", h.signInMethods)
 }

@@ -25,3 +25,16 @@ func fromDB(u db.User) User {
 type UpdateRequest struct {
 	DisplayName string `json:"displayName"`
 }
+
+// LinkedProvider is one OAuth sign-in linked to the account (never includes provider user ids).
+type LinkedProvider struct {
+	Provider string    `json:"provider"`
+	Email    string    `json:"email,omitempty"`
+	LinkedAt time.Time `json:"linkedAt"`
+}
+
+// SignInMethods powers the Profile screen: which providers and how many passkeys can sign in.
+type SignInMethods struct {
+	Providers []LinkedProvider `json:"providers"`
+	Passkeys  int              `json:"passkeys"`
+}

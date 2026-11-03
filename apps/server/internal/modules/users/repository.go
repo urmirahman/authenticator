@@ -16,6 +16,9 @@ type Repository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	// SignedInAt is when the session family (one sign-in) started; used for re-auth checks.
 	SignedInAt(ctx context.Context, userID, sessionFamily uuid.UUID) (time.Time, error)
+	// Identities are the linked OAuth providers; PasskeyCount the registered passkeys.
+	Identities(ctx context.Context, userID uuid.UUID) ([]db.Identity, error)
+	PasskeyCount(ctx context.Context, userID uuid.UUID) (int, error)
 	Queries() *db.Queries // read-only export queries
 }
 
@@ -41,3 +44,12 @@ func (r *pgRepository) SignedInAt(ctx context.Context, userID, family uuid.UUID)
 }
 
 func (r *pgRepository) Queries() *db.Queries { return r.q }
+
+func (r *pgRepository) Identities(ctx context.Context, userID uuid.UUID) ([]db.Identity, error) {
+	return r.q.ListIdentitiesByUser(ctx, userID)
+}
+
+func (r *pgRepository) PasskeyCount(ctx context.Context, userID uuid.UUID) (int, error) {
+	pk, err := r.q.ListPasskeysByUser(ctx, userID)
+	return len(pk), err
+}

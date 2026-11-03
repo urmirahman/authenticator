@@ -264,6 +264,30 @@ paths:
         '400': { $ref: '#/components/responses/Error' }
         '403': { description: 'reauth_required: sign in again (within 10 minutes) and retry' }
 
+  /users/me/sign-in-methods:
+    get:
+      tags: [users]
+      summary: Linked sign-in providers and passkey count (Profile screen)
+      responses:
+        '200':
+          description: Sign-in methods
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [providers, passkeys]
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      type: object
+                      required: [provider, linkedAt]
+                      properties:
+                        provider: { type: string, enum: [google, facebook, apple] }
+                        email: { type: string }
+                        linkedAt: { type: string, format: date-time }
+                  passkeys: { type: integer, minimum: 0 }
+
   /users/me/export:
     get:
       tags: [users]
