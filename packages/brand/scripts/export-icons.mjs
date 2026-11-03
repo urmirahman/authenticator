@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global console, Buffer */
 /**
  * Renders the SVG brand assets to PNGs for web (favicon, PWA, Open Graph) and Expo (icon, splash,
  * Android adaptive icon). Run: pnpm -F @repo/brand export-icons
