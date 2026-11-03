@@ -5,7 +5,18 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Button, Input, Label, styles as ui } from '@/components/ui';
+import { useColors } from '@/components/theme';
+import {
+  Button,
+  Card,
+  Choice,
+  IconBubble,
+  Input,
+  Label,
+  Muted,
+  styles as ui,
+} from '@/components/ui';
+import { useHaptics } from '@/lib/motion';
 import { FolderPicker } from './folder-picker';
 import { useVault } from './vault-store';
 
@@ -14,6 +25,8 @@ import { useVault } from './vault-store';
  * which can hold up to 10 accounts) or by typing the secret key.
  */
 export function AddAccountScreen() {
+  const c = useColors();
+  const haptic = useHaptics();
   const vault = useVault();
   const [mode, setMode] = useState<'scan' | 'manual'>('scan');
   const [permission, requestPermission] = useCameraPermissions();
@@ -47,6 +60,7 @@ export function AddAccountScreen() {
     setError(null);
     try {
       for (const a of accounts) await vault.save('account', toAccountData(a, form.folderId));
+      haptic('success');
       router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed');
@@ -78,54 +92,73 @@ export function AddAccountScreen() {
 
   if (found) {
     return (
-      <View style={s.pad}>
-        <Text style={s.title}>Add {found.length} account(s)?</Text>
-        {found.map((a, i) => (
-          <Text key={i}>
-            • {a.issuer || '—'} {a.label}
-          </Text>
-        ))}
-        <Button title={busy ? 'Saving…' : 'Add'} onPress={() => saveAll(found)} disabled={busy} />
+      <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={s.pad}>
+        <IconBubble name="sparkles-outline" />
+        <Text style={[s.title, { color: c.text }]} accessibilityRole="header">
+          Found {found.length} account{found.length === 1 ? '' : 's'}
+        </Text>
+        <Card style={{ gap: 8 }}>
+          {found.map((a, i) => (
+            <Text key={i} style={{ color: c.text }}>
+              <Text style={{ fontWeight: '600' }}>{a.issuer || '—'}</Text>
+              <Text style={{ color: c.muted }}> {a.label}</Text>
+            </Text>
+          ))}
+        </Card>
         <Button
-          variant="secondary"
-          title="Cancel"
+          icon="add-circle-outline"
+          title={busy ? 'Saving…' : found.length === 1 ? 'Add it' : `Add all ${found.length}`}
+          onPress={() => saveAll(found)}
+          disabled={busy}
+        />
+        <Button
+          variant="ghost"
+          title="Scan again"
           onPress={() => ((scanned.current = false), setFound(null))}
         />
         {error && <Text style={ui.error}>{error}</Text>}
-      </View>
+      </ScrollView>
     );
   }
 
   return (
-    <View style={s.flex}>
+    <View style={[s.flex, { backgroundColor: c.bg }]}>
       <View style={s.tabs}>
-        <Button
-          variant={mode === 'scan' ? 'primary' : 'secondary'}
-          title="Scan QR"
-          onPress={() => setMode('scan')}
-        />
-        <Button
-          variant={mode === 'manual' ? 'primary' : 'secondary'}
-          title="Enter key"
-          onPress={() => setMode('manual')}
+        <Choice
+          options={['scan', 'manual'] as const}
+          value={mode}
+          label={(m) => (m === 'scan' ? 'Scan QR code' : 'Enter key')}
+          onChange={setMode}
         />
       </View>
       {mode === 'scan' ? (
         !permission ? null : !permission.granted ? (
-          <View style={s.pad}>
-            <Text>We need the camera to scan QR codes.</Text>
+          <View style={[s.pad, s.centered]}>
+            <IconBubble name="camera-outline" />
+            <Text style={[s.title, { color: c.text }]}>Camera, please?</Text>
+            <Muted>Bloom only uses it to read the QR code a site shows when you turn on 2FA.</Muted>
             <Button title="Allow camera" onPress={requestPermission} />
           </View>
         ) : (
-          <CameraView
-            style={s.flex}
-            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-            onBarcodeScanned={({ data }) => onScan(data)}
-          />
+          <View style={s.flex}>
+            <CameraView
+              style={s.flex}
+              barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+              onBarcodeScanned={({ data }) => {
+                if (!scanned.current) haptic('success');
+                onScan(data);
+              }}
+              accessibilityLabel="Camera viewfinder for QR codes"
+            />
+            <View pointerEvents="none" style={[StyleSheet.absoluteFill, s.centered]}>
+              <View style={[s.frame, { borderColor: c.accent }]} />
+              <Text style={s.scanHint}>Point at the QR code</Text>
+            </View>
+          </View>
         )
       ) : (
-        <ScrollView contentContainerStyle={s.pad}>
-          <Label>Issuer</Label>
+        <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
+          <Label>Service</Label>
           <Input
             value={form.issuer}
             onChangeText={(issuer) => setForm({ ...form, issuer })}
@@ -138,7 +171,12 @@ export function AddAccountScreen() {
             placeholder="you@example.com"
           />
           <Label>Secret key</Label>
-          <Input value={form.secret} onChangeText={(secret) => setForm({ ...form, secret })} />
+          <Input
+            value={form.secret}
+            onChangeText={(secret) => setForm({ ...form, secret })}
+            placeholder="JBSW Y3DP EHPK 3PXP"
+            autoCapitalize="characters"
+          />
           <FolderPicker
             value={form.folderId}
             onChange={(folderId) => setForm({ ...form, folderId })}
@@ -153,8 +191,17 @@ export function AddAccountScreen() {
 
 const s = StyleSheet.create({
   flex: { flex: 1 },
-  pad: { padding: 16, gap: 10 },
-  tabs: { flexDirection: 'row', gap: 8, padding: 12 },
-  title: { fontSize: 20, fontWeight: '600' },
+  pad: { padding: 20, gap: 12, width: '100%', maxWidth: 560, alignSelf: 'center' },
+  tabs: { padding: 16, alignItems: 'center' },
+  title: { fontSize: 22, fontWeight: '700' },
   center: { textAlign: 'center', padding: 8 },
+  centered: { alignItems: 'center', justifyContent: 'center', flex: 1 },
+  frame: { width: 240, height: 240, borderWidth: 3, borderRadius: 32 },
+  scanHint: {
+    color: 'white',
+    marginTop: 16,
+    fontWeight: '600',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowRadius: 6,
+  },
 });

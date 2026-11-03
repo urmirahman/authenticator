@@ -3,10 +3,22 @@ import { activityLabel } from '@repo/vault';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/components/theme';
-import { Button } from '@/components/ui';
+import { Button, EmptyState, IconBubble, SkeletonList, type IconName } from '@/components/ui';
 import { api } from '@/lib/api';
+import { timeAgo } from '@/lib/time';
 
-/** Security log with "load more" (cursor = id of the last event). */
+const iconFor = (action: string): IconName =>
+  action.startsWith('auth') || action.startsWith('session')
+    ? 'log-in-outline'
+    : action.startsWith('backup')
+      ? 'cloud-upload-outline'
+      : action.startsWith('passkey')
+        ? 'finger-print'
+        : action.startsWith('device')
+          ? 'phone-portrait-outline'
+          : 'sparkles-outline';
+
+/** Security log as a soft timeline, with "load more" (cursor = id of the last event). */
 export function ActivityScreen() {
   const c = useColors();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
@@ -35,17 +47,34 @@ export function ActivityScreen() {
       data={events}
       keyExtractor={(e) => String(e.id)}
       onRefresh={() => load()}
-      refreshing={loading && events.length === 0}
+      refreshing={false}
       renderItem={({ item: e }) => (
-        <View style={[s.row, { backgroundColor: c.card }]}>
-          <Text style={{ color: c.text, fontWeight: '600' }}>{activityLabel(e.action)}</Text>
-          <Text style={{ color: c.muted, fontSize: 12 }}>
-            {new Date(e.createdAt).toLocaleString()} {e.ip ? `· ${e.ip}` : ''}
-          </Text>
+        <View
+          style={[s.row, { backgroundColor: c.surface, borderColor: c.border }]}
+          accessible
+          accessibilityLabel={`${activityLabel(e.action)}, ${timeAgo(e.createdAt)}`}
+        >
+          <IconBubble name={iconFor(e.action)} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ color: c.text, fontWeight: '600', fontSize: 15 }}>
+              {activityLabel(e.action)}
+            </Text>
+            <Text style={{ color: c.muted, fontSize: 13 }}>
+              {timeAgo(e.createdAt)}
+              {e.ip ? ` · ${e.ip}` : ''}
+            </Text>
+          </View>
         </View>
       )}
       ListEmptyComponent={
-        loading ? undefined : <Text style={{ color: c.muted }}>No activity yet.</Text>
+        loading ? (
+          <SkeletonList count={5} height={60} />
+        ) : (
+          <EmptyState
+            title="All quiet"
+            body="Sign-ins, backups and other security events show up here."
+          />
+        )
       }
       ListFooterComponent={
         next ? (
@@ -62,6 +91,13 @@ export function ActivityScreen() {
 }
 
 const s = StyleSheet.create({
-  list: { padding: 16, gap: 8 },
-  row: { padding: 12, borderRadius: 12, gap: 2 },
+  list: { padding: 20, gap: 10, width: '100%', maxWidth: 640, alignSelf: 'center' },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
 });

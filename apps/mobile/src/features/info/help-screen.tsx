@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { appIcon } from '@/components/brand-images';
 import { useColors } from '@/components/theme';
-import { Muted, Screen, Section } from '@/components/ui';
+import { Group, Muted, Row, Screen, Section } from '@/components/ui';
 import { openWebPage } from '@/lib/web-url';
 
 /** Help (FAQ rendered natively from @repo/content) + About + links to the legal pages on the web. */
@@ -28,7 +28,7 @@ export function HelpScreen() {
         <Muted>Version {Constants.expoConfig?.version ?? '—'}</Muted>
       </View>
 
-      <Section title="Frequently asked">
+      <Section title="Questions, answered">
         {faqs.map((f, i) => (
           <Pressable
             key={f.q}
@@ -44,22 +44,19 @@ export function HelpScreen() {
         ))}
       </Section>
 
-      <Section title="Legal & security">
+      <Group title="Legal & security">
         {legalLinks
           .filter((l) => l.href !== '/help')
-          .map((l) => (
-            <Pressable
+          .map((l, i, all) => (
+            <Row
               key={l.href}
+              label={l.label}
+              external
               onPress={() => openWebPage(l.href)}
-              accessibilityRole="link"
-              accessibilityLabel={`${l.label} (opens web page)`}
-              style={[s.link, { borderColor: c.border }]}
-            >
-              <Text style={{ color: c.text }}>{l.label}</Text>
-              <Text style={{ color: c.muted }}>↗</Text>
-            </Pressable>
+              last={i === all.length - 1}
+            />
           ))}
-      </Section>
+      </Group>
     </Screen>
   );
 }
