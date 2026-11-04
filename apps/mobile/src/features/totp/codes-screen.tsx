@@ -8,6 +8,8 @@ import {
   formatCode,
   type AccountData,
   type Decrypted,
+  expiryStatus,
+  formatExpiry,
 } from '@repo/vault';
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
@@ -80,6 +82,9 @@ function CodeRow({ item, now }: { item: Decrypted<AccountData>; now: number }) {
   const next =
     showNextCode && a.type !== 'hotp' && remaining <= 10 ? codeFor(a, now + a.period * 1000) : null;
   const [copied, setCopied] = useState(false);
+  const expiry = expiryStatus(a.expiresAt, new Date(now));
+  const [revealed, setRevealed] = useState(false);
+  const hidden = expiry === 'expired' && !revealed;
   const edit = () => router.push({ pathname: '/edit-account', params: { id: item.id } });
 
   const copy = async () => {
@@ -99,18 +104,25 @@ function CodeRow({ item, now }: { item: Decrypted<AccountData>; now: number }) {
       style={({ pressed }) => [
         s.row,
         { backgroundColor: c.surface, borderColor: copied ? c.accent : c.border },
+        expiry === 'expired' && { opacity: 0.6 },
         pressed && { transform: [{ scale: 0.985 }] },
       ]}
-      onPress={copy}
+      onPress={hidden ? () => setRevealed(true) : copy}
       onLongPress={() => {
         haptic('tap');
         edit();
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${a.issuer || a.label}, ${a.label}, code ${code.split('').join(' ')}${
-        remaining ? `, ${remaining} seconds left` : ''
-      }`}
-      accessibilityHint="Tap to copy. Long press to edit."
+      accessibilityLabel={
+        hidden
+          ? `${a.issuer || a.label}, ${a.label}, expired`
+          : `${a.issuer || a.label}, ${a.label}, code ${code.split('').join(' ')}${
+              remaining ? `, ${remaining} seconds left` : ''
+            }`
+      }
+      accessibilityHint={
+        hidden ? 'Tap to show the code anyway.' : 'Tap to copy. Long press to edit.'
+      }
       accessibilityActions={[{ name: 'longpress', label: 'Edit account' }]}
       onAccessibilityAction={edit}
     >
@@ -124,16 +136,30 @@ function CodeRow({ item, now }: { item: Decrypted<AccountData>; now: number }) {
             {a.label}
           </Text>
         )}
-        <Text
-          style={[
-            s.code,
-            codeSize === 'compact' && s.codeCompact,
-            { color: remaining > 0 && remaining <= 5 ? c.danger : c.accent },
-          ]}
-          maxFontSizeMultiplier={1.6}
-        >
-          {formatCode(code, groupDigits)}
-        </Text>
+        {expiry === 'expired' && (
+          <Text style={[s.expChip, { backgroundColor: c.border, color: c.text }]}>Expired</Text>
+        )}
+        {expiry === 'soon' && a.expiresAt && (
+          <Text style={[s.expChip, { backgroundColor: c.accentSoft, color: c.text }]}>
+            Expires soon · {formatExpiry(a.expiresAt)}
+          </Text>
+        )}
+        {hidden ? (
+          <Text style={{ color: c.accent, fontWeight: '600', paddingVertical: 6 }}>
+            Show anyway
+          </Text>
+        ) : (
+          <Text
+            style={[
+              s.code,
+              codeSize === 'compact' && s.codeCompact,
+              { color: remaining > 0 && remaining <= 5 ? c.danger : c.accent },
+            ]}
+            maxFontSizeMultiplier={1.6}
+          >
+            {formatCode(code, groupDigits)}
+          </Text>
+        )}
         {copied ? (
           <Text style={{ color: c.success, fontSize: 13, fontWeight: '600' }}>
             Copied — paste it in ✿
@@ -351,6 +377,16 @@ export function CodesScreen() {
 }
 
 const s = StyleSheet.create({
+  expChip: {
+    alignSelf: 'flex-start',
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
   screen: { flex: 1 },
   list: {
     padding: 20,

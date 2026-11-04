@@ -4,7 +4,7 @@ import {
   secretKeyError,
   toAccountData,
   toImported,
-  type AccountData,
+  withExpiry,
 } from '@repo/vault';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
@@ -23,6 +23,7 @@ import {
   styles as ui,
 } from '@/components/ui';
 import { useHaptics } from '@/lib/motion';
+import { ExpiryField } from './expiry-field';
 import { FolderPicker } from './folder-picker';
 import { useVault } from './vault-store';
 
@@ -45,10 +46,8 @@ export function AddAccountScreen() {
     label: string;
     secret: string;
     folderId?: string;
-    algorithm: AccountData['algorithm'];
-    digits: number;
-    period: number;
-  }>({ issuer: '', label: '', secret: '', algorithm: 'SHA1', digits: 6, period: 30 });
+    expiresAt?: string;
+  }>({ issuer: '', label: '', secret: '' });
   const [advanced, setAdvanced] = useState(false);
   const [keyTouched, setKeyTouched] = useState(false);
   const secret = normalizeSecret(form.secret);
@@ -73,7 +72,8 @@ export function AddAccountScreen() {
     setBusy(true);
     setError(null);
     try {
-      for (const a of accounts) await vault.save('account', toAccountData(a, form.folderId));
+      for (const a of accounts)
+        await vault.save('account', withExpiry(toAccountData(a, form.folderId), form.expiresAt));
       haptic('success');
       router.back();
     } catch (e) {
@@ -92,9 +92,9 @@ export function AddAccountScreen() {
         issuer: form.issuer.trim(),
         label: form.label.trim(),
         secret,
-        algorithm: form.algorithm,
-        digits: form.digits,
-        period: form.period,
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
       },
     ]);
   };
@@ -210,27 +210,10 @@ export function AddAccountScreen() {
             onPress={() => setAdvanced(!advanced)}
           />
           {advanced && (
-            <Card style={{ gap: 10 }}>
-              <Label>Algorithm</Label>
-              <Choice
-                options={['SHA1', 'SHA256', 'SHA512'] as const}
-                value={form.algorithm}
-                label={(v) => v}
-                onChange={(algorithm) => setForm({ ...form, algorithm })}
-              />
-              <Label>Digits</Label>
-              <Choice
-                options={[6, 7, 8] as const}
-                value={form.digits as 6 | 7 | 8}
-                label={String}
-                onChange={(digits) => setForm({ ...form, digits })}
-              />
-              <Label>Period</Label>
-              <Choice
-                options={[30, 60] as const}
-                value={(form.period === 60 ? 60 : 30) as 30 | 60}
-                label={(v) => `${v} s`}
-                onChange={(period) => setForm({ ...form, period })}
+            <Card>
+              <ExpiryField
+                value={form.expiresAt}
+                onChange={(expiresAt) => setForm({ ...form, expiresAt })}
               />
             </Card>
           )}
