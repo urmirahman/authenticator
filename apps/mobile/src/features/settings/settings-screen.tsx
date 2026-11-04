@@ -11,7 +11,7 @@ import { File, Paths } from 'expo-file-system';
 import { router } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import {
   Button,
   Card,
@@ -20,6 +20,7 @@ import {
   Input,
   Label,
   Muted,
+  Notice,
   Row,
   Screen,
   SwitchRow,
@@ -31,7 +32,7 @@ import { openWebPage } from '@/lib/web-url';
 import { DeleteAccount } from './delete-account';
 import { usePreferences } from './preferences';
 
-function ChangePassword({ onDone }: { onDone: () => void }) {
+function ChangePassword({ onDone }: { onDone: (message: string) => void }) {
   const vault = useVault();
   const haptic = useHaptics();
   const [f, setF] = useState({ current: '', next: '', confirm: '' });
@@ -49,11 +50,7 @@ function ChangePassword({ onDone }: { onDone: () => void }) {
       await vault.changePassword(f.current, f.next);
       setF({ current: '', next: '', confirm: '' });
       haptic('success');
-      Alert.alert(
-        'Password changed',
-        'All set. Biometric unlock was turned off — switch it back on if you like.',
-      );
-      onDone();
+      onDone('Password changed. Biometric unlock was turned off — switch it back on if you like.');
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Failed');
     } finally {
@@ -94,6 +91,7 @@ export function SettingsScreen() {
   const [bioMsg, setBioMsg] = useState<string | null>(null);
   const [changing, setChanging] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
 
   /** "Download my data": write the JSON to a temp file and open the share sheet. */
   const exportData = async () => {
@@ -102,8 +100,11 @@ export function SettingsScreen() {
       const file = new File(Paths.cache, 'bloom-export.json');
       file.write(JSON.stringify(data, null, 2));
       await Sharing.shareAsync(file.uri, { mimeType: 'application/json' });
-    } catch (e) {
-      Alert.alert('Could not export', e instanceof Error ? e.message : 'Try again');
+    } catch {
+      setNotice({
+        tone: 'error',
+        text: 'We couldn’t prepare your export. Check your connection and try again.',
+      });
     }
   };
 
@@ -111,6 +112,11 @@ export function SettingsScreen() {
 
   return (
     <Screen title="Settings" subtitle="Make Bloom feel like home.">
+      {notice && (
+        <Notice tone={notice.tone} onDismiss={() => setNotice(null)}>
+          {notice.text}
+        </Notice>
+      )}
       <Group
         title="Security"
         footer="Biometric unlock keeps a copy of the vault key in this phone's secure hardware. Screenshots and screen recording are always blocked while Bloom is open."
@@ -144,7 +150,14 @@ export function SettingsScreen() {
           last
         />
       </Group>
-      {changing && <ChangePassword onDone={() => setChanging(false)} />}
+      {changing && (
+        <ChangePassword
+          onDone={(text) => {
+            setChanging(false);
+            setNotice({ tone: 'success', text });
+          }}
+        />
+      )}
 
       <Group title="Preferences">
         <ChoiceRow

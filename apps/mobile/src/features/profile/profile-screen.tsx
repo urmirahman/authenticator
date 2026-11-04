@@ -4,7 +4,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Prompt } from '@/components/prompt';
 import { useColors } from '@/components/theme';
-import { Avatar, Card, FadeIn, Group, Row, Screen, Skeleton, type IconName } from '@/components/ui';
+import {
+  Avatar,
+  Card,
+  FadeIn,
+  Group,
+  Notice,
+  Row,
+  Screen,
+  Skeleton,
+  type IconName,
+} from '@/components/ui';
 import { signOutGoogle } from '@/features/auth/google-sign-in';
 import { clearBiometricKey } from '@/features/security/biometric-key';
 import { useVault } from '@/features/vault/vault-store';
@@ -106,6 +116,12 @@ export function ProfileScreen() {
         </FadeIn>
       )}
 
+      {user && error && (
+        <Notice tone="error" onDismiss={() => setError(null)}>
+          {error}
+        </Notice>
+      )}
+
       <View style={s.stats} accessibilityRole="summary">
         <Stat label="Accounts" value={String(vault.accounts.length)} />
         <Stat label="Folders" value={String(vault.folders.length)} />
@@ -168,7 +184,9 @@ export function ProfileScreen() {
             setUser(await api.users.update(displayName.trim()));
             haptic('success');
           } catch (e) {
-            Alert.alert('Could not save', e instanceof Error ? e.message : 'Try again');
+            setError(
+              e instanceof Error ? 'We couldn’t save your name. Please try again.' : 'Try again',
+            );
           }
           setEditing(false);
         }}

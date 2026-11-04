@@ -3,7 +3,6 @@ import type { OAuthProvider } from '@repo/types';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -14,7 +13,7 @@ import {
 } from 'react-native';
 import { useLogoMark } from '@/components/brand-images';
 import { useColors } from '@/components/theme';
-import { Button, Card, FadeIn, Input, Label, styles as ui } from '@/components/ui';
+import { Button, Card, FadeIn, Input, Label, Notice, styles as ui } from '@/components/ui';
 import { openWebPage } from '@/lib/web-url';
 import { api, completeSignIn, DEV_AUTH } from '@/lib/api';
 import { googleSignInConfigured, signInWithGoogle } from './google-sign-in';
@@ -40,6 +39,7 @@ export function SignInScreen() {
   const [email, setEmail] = useState('dev@example.com');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [soon, setSoon] = useState<string | null>(null);
 
   const devLogin = async () => {
     setBusy(true);
@@ -97,9 +97,8 @@ export function SignInScreen() {
               variant="secondary"
               title={p.label}
               onPress={() =>
-                Alert.alert(
-                  'Coming soon',
-                  `${p.label.replace('Continue with ', '')} sign-in isn't set up yet.`,
+                setSoon(
+                  `${p.label.replace('Continue with ', '')} sign-in is coming soon. For now, use Google.`,
                 )
               }
             />
@@ -116,6 +115,7 @@ export function SignInScreen() {
               />
             </Card>
           )}
+          {soon && <Notice onDismiss={() => setSoon(null)}>{soon}</Notice>}
           {error && <Text style={[ui.error, { textAlign: 'center' }]}>{error}</Text>}
           <Text style={[s.legal, { color: c.muted }]}>
             By continuing you agree to the{' '}

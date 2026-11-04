@@ -604,4 +604,56 @@ export const styles = StyleSheet.create({
   emptyMark: { width: 88, height: 88, opacity: 0.9, marginBottom: space.sm },
   emptyTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
   center: { alignItems: 'center', justifyContent: 'center' },
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
 });
+
+/** Cozy inline notice (instead of a pop-up alert for information). */
+export function Notice({
+  tone = 'info',
+  children,
+  onDismiss,
+}: {
+  tone?: 'info' | 'success' | 'error';
+  children: ReactNode;
+  onDismiss?: () => void;
+}) {
+  const c = useColors();
+  const color = tone === 'error' ? c.danger : tone === 'success' ? c.success : c.accent;
+  return (
+    <View
+      accessibilityRole={tone === 'error' ? 'alert' : 'text'}
+      accessibilityLiveRegion="polite"
+      style={[styles.notice, { backgroundColor: c.accentSoft, borderColor: color }]}
+    >
+      <Ionicons
+        name={
+          tone === 'error'
+            ? 'alert-circle-outline'
+            : tone === 'success'
+              ? 'checkmark-circle-outline'
+              : 'leaf-outline'
+        }
+        size={18}
+        color={color}
+      />
+      <Text style={{ color: c.text, flex: 1, lineHeight: 20 }}>{children}</Text>
+      {onDismiss && (
+        <Pressable
+          onPress={onDismiss}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss"
+          hitSlop={10}
+        >
+          <Ionicons name="close" size={16} color={c.muted} />
+        </Pressable>
+      )}
+    </View>
+  );
+}

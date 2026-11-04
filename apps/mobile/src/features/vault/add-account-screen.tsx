@@ -1,6 +1,11 @@
-import { base32Decode } from '@repo/crypto';
 import { dedupe, importAny, type ImportedAccount } from '@repo/importers';
-import { toAccountData, toImported } from '@repo/vault';
+import {
+  normalizeSecret,
+  secretKeyError,
+  toAccountData,
+  toImported,
+  type AccountData,
+} from '@repo/vault';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -12,6 +17,7 @@ import {
   Choice,
   IconBubble,
   Input,
+  monoFont,
   Label,
   Muted,
   styles as ui,
@@ -39,7 +45,15 @@ export function AddAccountScreen() {
     label: string;
     secret: string;
     folderId?: string;
-  }>({ issuer: '', label: '', secret: '' });
+    algorithm: AccountData['algorithm'];
+    digits: number;
+    period: number;
+  }>({ issuer: '', label: '', secret: '', algorithm: 'SHA1', digits: 6, period: 30 });
+  const [advanced, setAdvanced] = useState(false);
+  const [keyTouched, setKeyTouched] = useState(false);
+  const secret = normalizeSecret(form.secret);
+  const keyError = secretKeyError(secret);
+  const canAdd = form.issuer.trim().length > 0 && !keyError && !busy;
 
   const onScan = (data: string) => {
     if (scanned.current) return;
@@ -70,22 +84,17 @@ export function AddAccountScreen() {
   };
 
   const saveManual = () => {
-    const secret = form.secret.replace(/\s|-/g, '').toUpperCase();
-    try {
-      base32Decode(secret);
-    } catch {
-      return setError('That secret key is not valid base32.');
-    }
-    if (!form.issuer && !form.label) return setError('Add an issuer or a label.');
+    setKeyTouched(true);
+    if (!canAdd) return;
     saveAll([
       {
         type: 'totp',
         issuer: form.issuer.trim(),
         label: form.label.trim(),
         secret,
-        algorithm: 'SHA1',
-        digits: 6,
-        period: 30,
+        algorithm: form.algorithm,
+        digits: form.digits,
+        period: form.period,
       },
     ]);
   };
@@ -158,30 +167,78 @@ export function AddAccountScreen() {
         )
       ) : (
         <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
-          <Label>Service</Label>
+          <Label>Name</Label>
           <Input
             value={form.issuer}
             onChangeText={(issuer) => setForm({ ...form, issuer })}
-            placeholder="GitHub"
+            placeholder="e.g. GitHub"
+            accessibilityLabel="Name"
+            autoCapitalize="words"
           />
-          <Label>Account</Label>
+          <Label>Account (optional)</Label>
           <Input
             value={form.label}
             onChangeText={(label) => setForm({ ...form, label })}
             placeholder="you@example.com"
+            accessibilityLabel="Account (optional)"
           />
-          <Label>Secret key</Label>
+          <Label>Key</Label>
           <Input
             value={form.secret}
-            onChangeText={(secret) => setForm({ ...form, secret })}
+            onChangeText={(v) => setForm({ ...form, secret: v })}
+            onBlur={() => setKeyTouched(true)}
             placeholder="JBSW Y3DP EHPK 3PXP"
             autoCapitalize="characters"
+            accessibilityLabel="Key"
+            style={{ fontFamily: monoFont }}
           />
+          <Text
+            style={{ color: keyTouched && keyError ? c.danger : c.muted, fontSize: 13 }}
+            accessibilityLiveRegion="polite"
+          >
+            {keyTouched && keyError
+              ? keyError
+              : 'The key the website shows under “Can’t scan the code?”. Spaces are fine.'}
+          </Text>
           <FolderPicker
             value={form.folderId}
             onChange={(folderId) => setForm({ ...form, folderId })}
           />
-          <Button title={busy ? 'Saving…' : 'Add account'} onPress={saveManual} disabled={busy} />
+          <Button
+            variant="ghost"
+            title={advanced ? 'Hide advanced' : 'Advanced'}
+            onPress={() => setAdvanced(!advanced)}
+          />
+          {advanced && (
+            <Card style={{ gap: 10 }}>
+              <Label>Algorithm</Label>
+              <Choice
+                options={['SHA1', 'SHA256', 'SHA512'] as const}
+                value={form.algorithm}
+                label={(v) => v}
+                onChange={(algorithm) => setForm({ ...form, algorithm })}
+              />
+              <Label>Digits</Label>
+              <Choice
+                options={[6, 7, 8] as const}
+                value={form.digits as 6 | 7 | 8}
+                label={String}
+                onChange={(digits) => setForm({ ...form, digits })}
+              />
+              <Label>Period</Label>
+              <Choice
+                options={[30, 60] as const}
+                value={(form.period === 60 ? 60 : 30) as 30 | 60}
+                label={(v) => `${v} s`}
+                onChange={(period) => setForm({ ...form, period })}
+              />
+            </Card>
+          )}
+          <Button
+            title={busy ? 'Saving…' : 'Add account'}
+            onPress={saveManual}
+            disabled={!canAdd}
+          />
         </ScrollView>
       )}
       {error && <Text style={[ui.error, s.center]}>{error}</Text>}
