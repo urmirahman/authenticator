@@ -2,44 +2,37 @@ import { md, site } from '../site';
 
 export const securityPage = () => `# Security
 
-Bloom is built so that **a breach of our servers would not reveal your codes**. Here is how, and where the limits are.
+Bloom is built so that **even if our servers were breached, your codes would stay private.**
 
-## How your vault is protected
-1. You choose a **master password**. On your device, **Argon2id** (64 MiB memory on web, 19 MiB on phones)
-   turns it into a key-encryption key.
-2. A random 256-bit **vault key** encrypts every item with **XChaCha20-Poly1305**. Each item is bound to its
-   id, so items can't be swapped around.
-3. Only the vault key **wrapped** by your password key is sent to us. Unlocking happens on your device.
-4. Encrypted backups use a separate backup password the same way.
+## How your codes are protected
+- Your codes are **encrypted on your device** before they're synced. We only ever store scrambled data.
+- Only your **master password** can unlock them, and it never leaves your device.
+- Signing in with Google or a passkey proves who you are. Your master password is what unlocks your codes.
+- Encrypted backups are locked with their own backup password.
 
-Sign-in (Google / passkeys) proves who you are; the master password is what decrypts.
+We use modern, well-reviewed encryption (Argon2id and XChaCha20-Poly1305).
 
-## What we protect against
-- A copy of our database leaking: attackers get ciphertext and must brute-force your master password,
-  which Argon2id makes slow. **A long, unique master password matters.**
-- Stolen sign-in tokens: short-lived access tokens, rotating refresh tokens with reuse detection,
-  remote device sign-out, activity log.
-- Network attackers: HTTPS only in production, strict security headers, rate-limited sign-in.
+## What we do to keep your account safe
+- Short-lived sign-in sessions you can sign out remotely from **Devices**.
+- An **Activity** log of sign-ins and changes.
+- HTTPS everywhere and rate-limited sign-in.
 
-## What we can't fully protect against
-- Malware or someone with control of your unlocked device.
+## What no app can fully protect against
+- Malware on, or someone in control of, your unlocked device.
 - A weak or reused master password.
-- A malicious update to the web app served by us (true for every web app). The mobile apps and the open
-  source code help you verify.
-- Phishing of the 2FA codes themselves after you copy them.
+- Phishing sites that trick you into typing a code.
 
 ## Your part
-Use a long passphrase, enable auto-lock, keep the recovery kit offline, and review Devices and Activity occasionally.
+Use a long, unique master password, turn on auto-lock, and keep your recovery kit somewhere safe and offline.
 
-## Certifications
-We hold **no** security certifications (e.g. SOC 2, ISO 27001) and have **not yet** had an independent audit.
-When an independent review is completed, we will summarise the findings and fixes on this page.
+## Audits
+Bloom hasn't had an independent security audit yet and holds no certifications such as SOC 2 or ISO 27001.
 
 ## Reporting a vulnerability
-Please email ${md(site.securityEmail)} with steps to reproduce. We will acknowledge within 5 business days,
-keep you updated, and credit you (if you want) once fixed. Please don't access other people's data, degrade the
-service, or disclose publicly before a fix. We won't pursue legal action for good-faith research that follows
-these rules. Our machine-readable contact is at [/.well-known/security.txt](/.well-known/security.txt).
+Email ${md(site.securityEmail)} with steps to reproduce. We'll reply within 5 business days and credit you if
+you'd like. Please don't access other people's data or share the issue publicly before it's fixed. We won't take
+legal action over good-faith research that follows these rules. See also
+[/.well-known/security.txt](/.well-known/security.txt).
 `;
 
 /** RFC 9116 security.txt. Expires must be < 1 year ahead; regenerate yearly. */
