@@ -34,7 +34,7 @@ terms removes rights you have as a consumer under the law that applies to you.
 You can delete your account at any time in Settings. We may suspend accounts that abuse the service.
 
 ## 7. Free to use
-Bloom is free to use. There are no paid plans or in-app purchases.
+Bloom Authenticator is free to use. There are no paid plans or in-app purchases.
 
 ## 8. Changes and law
 We may update these terms with notice in the app. These terms are governed by the laws of ${md(site.jurisdiction)}.

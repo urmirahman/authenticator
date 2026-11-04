@@ -12,7 +12,7 @@ codes.
 Bloom is available now on the web. The Android app is under review on Google Play and is coming soon.
 
 ## Free to use
-Bloom is free to use. There are no ads and no paid plans.
+Bloom Authenticator is free to use. There are no ads and no paid plans.
 
 ## Contact
 ${md(site.contactEmail)}
