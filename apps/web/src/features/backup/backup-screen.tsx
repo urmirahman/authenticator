@@ -6,6 +6,7 @@ import type { BackupMeta } from '@repo/types';
 import { Button } from '@repo/ui/button';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Field, inputClass, PageTitle } from '@/components/ui';
+import { useDialogs } from '@/components/dialogs';
 import { toAccountData, toImported } from '@repo/vault';
 import { useVault } from '@/features/vault/vault-context';
 import { api } from '@/lib/api';
@@ -78,8 +79,16 @@ export function BackupScreen() {
     });
   };
 
+  const ask = useDialogs();
+
   const remove = async (b: BackupMeta) => {
-    if (!confirm(`Delete backup "${b.name}"?`)) return;
+    const ok = await ask.confirm({
+      title: `Delete “${b.name}”?`,
+      message: 'This backup will be gone for good. Your vault itself isn’t affected.',
+      confirmLabel: 'Delete backup',
+      danger: true,
+    });
+    if (!ok) return;
     await api.backups.remove(b.id);
     load();
   };
@@ -162,6 +171,7 @@ export function BackupScreen() {
         {backups.length === 0 && <li className="text-sm text-muted">No backups yet.</li>}
       </ul>
       {msg && <p className="text-sm">{msg}</p>}
+      {ask.dialogs}
     </div>
   );
 }

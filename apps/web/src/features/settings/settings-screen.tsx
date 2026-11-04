@@ -4,16 +4,26 @@ import type { Passkey } from '@repo/types';
 import { friendlyPasskeyError } from '@repo/vault/passkey-errors';
 import { Button } from '@repo/ui/button';
 import { useEffect, useState } from 'react';
+import { useDialogs } from '@/components/dialogs';
 import { Field, inputClass, Notice, PageTitle } from '@/components/ui';
 import { passkeysSupported, registerPasskey } from '@/features/auth/passkey';
 import { api } from '@/lib/api';
 import { ChangePasswordForm } from './change-password';
+import { ImportSection } from './import-section';
 import { DeleteAccount } from './delete-account';
 import { updateSettings, useSettings, type Settings } from './settings';
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  id,
+  children,
+}: {
+  title: string;
+  id?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="space-y-3 rounded-2xl bg-surface p-5 ring-1 ring-line">
+    <section id={id} className="scroll-mt-24 space-y-3 rounded-2xl bg-surface p-5 ring-1 ring-line">
       <h2 className="font-semibold">{title}</h2>
       {children}
     </section>
@@ -23,6 +33,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function SettingsScreen() {
   const s = useSettings();
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
+  const ask = useDialogs();
   const [msg, setMsg] = useState<{ tone: 'info' | 'success' | 'error'; text: string } | null>(null);
 
   const loadPasskeys = () => api.passkeys.list().then(setPasskeys, () => undefined);
@@ -34,8 +45,14 @@ export function SettingsScreen() {
     updateSettings({ [k]: Number(e.target.value) });
 
   const addPasskey = async () => {
-    const name = prompt('Name this passkey', 'My laptop');
-    if (!name) return;
+    const name = await ask.prompt({
+      title: 'Name this passkey',
+      description: 'So you can tell your devices apart later.',
+      placeholder: 'e.g. My laptop',
+      initial: 'My laptop',
+      confirmLabel: 'Continue',
+    });
+    if (typeof name !== 'string') return;
     try {
       await registerPasskey(name);
       setMsg({ tone: 'success', text: `Passkey “${name}” added. You can now sign in with it.` });
@@ -123,18 +140,29 @@ export function SettingsScreen() {
               </span>
               <button
                 className="ml-auto mr-3 text-accent"
-                onClick={() => {
-                  const name = prompt('Rename passkey', p.name)?.trim();
-                  if (name && name !== p.name) api.passkeys.rename(p.id, name).then(loadPasskeys);
+                onClick={async () => {
+                  const name = await ask.prompt({
+                    title: 'Rename passkey',
+                    initial: p.name,
+                    confirmLabel: 'Save',
+                  });
+                  if (typeof name === 'string' && name !== p.name)
+                    api.passkeys.rename(p.id, name).then(loadPasskeys);
                 }}
               >
                 Rename
               </button>
               <button
                 className="text-danger"
-                onClick={() =>
-                  confirm(`Remove ${p.name}?`) && api.passkeys.remove(p.id).then(loadPasskeys)
-                }
+                onClick={async () => {
+                  const ok = await ask.confirm({
+                    title: `Remove “${p.name}”?`,
+                    message: 'You won’t be able to sign in with this passkey any more.',
+                    confirmLabel: 'Remove passkey',
+                    danger: true,
+                  });
+                  if (ok) api.passkeys.remove(p.id).then(loadPasskeys);
+                }}
               >
                 Remove
               </button>
@@ -152,6 +180,10 @@ export function SettingsScreen() {
             {msg.text}
           </Notice>
         )}
+      </Section>
+
+      <Section title="Import" id="import">
+        <ImportSection />
       </Section>
 
       <Section title="Your data">
@@ -187,6 +219,7 @@ export function SettingsScreen() {
           About
         </a>
       </p>
+      {ask.dialogs}
     </div>
   );
 }

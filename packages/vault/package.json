@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./passkey-errors": "./src/passkey-errors.ts"
+    "./passkey-errors": "./src/passkey-errors.ts",
+    "./secret-key": "./src/secret-key.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

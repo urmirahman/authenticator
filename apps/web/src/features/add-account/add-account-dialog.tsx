@@ -1,38 +1,58 @@
 'use client';
 
-import { base32Decode } from '@repo/crypto';
-import { dedupe, importAny, type ImportedAccount } from '@repo/importers';
+import type { ImportedAccount } from '@repo/importers';
 import { Button } from '@repo/ui/button';
-import { useState, type FormEvent } from 'react';
-import { useVault } from '@/features/vault/vault-context';
 import type { AccountData, Decrypted } from '@repo/vault';
+import { normalizeSecret, secretKeyError, toAccountData, friendlyKeyError } from '@repo/vault';
+import Link from 'next/link';
+import { useState, type FormEvent } from 'react';
 import { Dialog, Field, inputClass } from '@/components/ui';
+import { useVault } from '@/features/vault/vault-context';
+import { findNewAccounts } from './import-accounts';
 import { readQrFromFile } from './qr';
-import { toAccountData } from '@repo/vault';
 
-type Tab = 'manual' | 'qr' | 'paste';
+type Tab = 'qr' | 'manual';
 
 /**
- * Three ways to add accounts:
- *  - manual: type the secret key the website shows under "can't scan?"
- *  - qr: upload a screenshot of the QR code (decoded in the browser)
- *  - paste: otpauth:// link, Google Authenticator export link, or 2FAS / Aegis JSON
- * Editing an existing account reuses the manual form.
+ * Add an account the Google Authenticator way: scan a QR (upload or drop a screenshot) or enter
+ * the key. Importing from other apps lives in Settings → Import. Editing reuses the key form.
  */
 export function AddAccountDialog({
   editing,
   folderId,
   onClose,
+  onDelete,
 }: {
   editing?: Decrypted<AccountData>;
   folderId?: string;
   onClose: () => void;
+  /** Editing only: ask for confirmation and delete (handled by the caller's dialog). */
+  onDelete?: () => void;
 }) {
   const vault = useVault();
-  const [tab, setTab] = useState<Tab>('manual');
+  const d = editing?.data;
+  const [tab, setTab] = useState<Tab>(editing ? 'manual' : 'qr');
   const [found, setFound] = useState<ImportedAccount[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [form, setForm] = useState({
+    issuer: d?.issuer ?? '',
+    label: d?.label ?? '',
+    secret: d?.secret ?? '',
+    algorithm: d?.algorithm ?? 'SHA1',
+    digits: d?.digits ?? 6,
+    period: d?.period ?? 30,
+    folderId: d?.folderId ?? folderId ?? '',
+  });
+  const [advanced, setAdvanced] = useState(
+    !!d && (d.algorithm !== 'SHA1' || d.digits !== 6 || d.period !== 30),
+  );
+  const [touchedKey, setTouchedKey] = useState(false);
+
+  const secret = normalizeSecret(form.secret);
+  const keyError = secretKeyError(secret);
+  const canSave = form.issuer.trim().length > 0 && !keyError && !busy;
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -46,16 +66,18 @@ export function AddAccountDialog({
     }
   };
 
-  /** Parse any supported text, and hide accounts we already have. */
-  const parse = (text: string) => {
-    const { accounts } = importAny(text.trim());
-    const existing = vault.accounts.map(
-      (a) => ({ ...a.data, type: a.data.type ?? 'totp' }) as ImportedAccount,
-    );
-    const fresh = dedupe(existing, accounts);
-    if (fresh.length === 0) throw new Error('Nothing new to import (already in your vault).');
-    setFound(fresh);
-  };
+  const readImage = (file: File) =>
+    run(async () => {
+      let text: string;
+      try {
+        text = await readQrFromFile(file);
+      } catch {
+        throw new Error(
+          'We couldn’t find a QR code in that image. Try a sharper, uncropped screenshot.',
+        );
+      }
+      setFound(findNewAccounts(text, vault.accounts));
+    });
 
   const importFound = () =>
     run(async () => {
@@ -63,178 +85,228 @@ export function AddAccountDialog({
       onClose();
     });
 
-  const submitManual = (e: FormEvent<HTMLFormElement>) => {
+  const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
+    setTouchedKey(true);
+    if (!canSave) return;
     run(async () => {
-      const secret = String(f.get('secret')).replace(/\s|-/g, '').toUpperCase();
-      base32Decode(secret); // throws on invalid characters
-      const data: AccountData = {
-        ...editing?.data,
-        issuer: String(f.get('issuer')).trim(),
-        label: String(f.get('label')).trim(),
-        secret,
-        algorithm: f.get('algorithm') as AccountData['algorithm'],
-        digits: Number(f.get('digits')),
-        period: Number(f.get('period')),
-        folderId: String(f.get('folderId')) || undefined,
-      };
-      if (!data.issuer && !data.label) throw new Error('Add an issuer or a label');
-      await vault.save('account', data, editing?.id);
-      onClose();
+      try {
+        const data: AccountData = {
+          ...d,
+          type: d?.type ?? 'totp',
+          issuer: form.issuer.trim(),
+          label: form.label.trim(),
+          secret,
+          algorithm: form.algorithm as AccountData['algorithm'],
+          digits: Number(form.digits),
+          period: Number(form.period),
+          folderId: form.folderId || undefined,
+        };
+        await vault.save('account', data, editing?.id);
+        onClose();
+      } catch (err) {
+        throw new Error(friendlyKeyError(err));
+      }
     });
   };
 
-  const d = editing?.data;
+  const set = (k: keyof typeof form) => (e: { target: { value: string } }) =>
+    setForm({ ...form, [k]: e.target.value });
+
   return (
     <Dialog title={editing ? 'Edit account' : 'Add account'} onClose={onClose}>
-      {!editing && (
-        <div className="mb-4 flex gap-1 rounded-xl bg-surface-muted p-1 text-sm">
-          {(['manual', 'qr', 'paste'] as Tab[]).map((t) => (
+      {!editing && found.length === 0 && (
+        <div role="tablist" className="mb-4 flex gap-1 rounded-xl bg-surface-muted p-1 text-sm">
+          {(['qr', 'manual'] as Tab[]).map((t) => (
             <button
               key={t}
-              className={`flex-1 rounded-lg py-1.5 ${tab === t ? 'bg-surface shadow-sm' : ''}`}
+              type="button"
+              role="tab"
+              aria-selected={tab === t}
+              className={`flex-1 rounded-lg py-2 font-medium ${tab === t ? 'bg-surface shadow-sm' : 'text-muted'}`}
               onClick={() => {
                 setTab(t);
-                setFound([]);
                 setError(null);
               }}
             >
-              {{ manual: 'Enter key', qr: 'QR image', paste: 'Paste / import' }[t]}
+              {t === 'qr' ? 'Scan QR' : 'Enter key'}
             </button>
           ))}
         </div>
       )}
 
-      {tab === 'manual' && (
-        <form onSubmit={submitManual} className="space-y-3">
-          <Field label="Issuer (e.g. GitHub)">
-            <input name="issuer" defaultValue={d?.issuer} className={inputClass} />
-          </Field>
-          <Field label="Account (e.g. you@example.com)">
-            <input name="label" defaultValue={d?.label} className={inputClass} />
-          </Field>
-          <Field label="Secret key">
+      {tab === 'qr' && found.length === 0 && (
+        <label
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const file = e.dataTransfer.files[0];
+            if (file) readImage(file);
+          }}
+          className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-8 text-center text-sm transition-colors focus-within:ring-2 focus-within:ring-accent ${
+            dragging ? 'border-accent bg-accent-soft' : 'border-line text-muted'
+          }`}
+        >
+          <span aria-hidden className="text-3xl">
+            ▣
+          </span>
+          <span className="font-medium text-fg">Drop a screenshot of the QR code</span>
+          <span>or click to choose an image</span>
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) readImage(file);
+            }}
+          />
+        </label>
+      )}
+
+      {tab === 'manual' && found.length === 0 && (
+        <form onSubmit={submit} className="space-y-3" noValidate>
+          <Field label="Name (e.g. GitHub)">
             <input
-              name="secret"
+              value={form.issuer}
+              onChange={set('issuer')}
+              className={inputClass}
+              autoFocus={!editing}
               required
-              defaultValue={d?.secret}
-              className={`${inputClass} font-mono`}
-              autoComplete="off"
             />
           </Field>
-          <div className="grid grid-cols-3 gap-2">
-            <Field label="Algorithm">
-              <select name="algorithm" defaultValue={d?.algorithm ?? 'SHA1'} className={inputClass}>
-                <option>SHA1</option>
-                <option>SHA256</option>
-                <option>SHA512</option>
-              </select>
-            </Field>
-            <Field label="Digits">
-              <select name="digits" defaultValue={d?.digits ?? 6} className={inputClass}>
-                <option>6</option>
-                <option>7</option>
-                <option>8</option>
-              </select>
-            </Field>
-            <Field label="Period (s)">
-              <input
-                name="period"
-                type="number"
-                min={10}
-                max={120}
-                defaultValue={d?.period ?? 30}
-                className={inputClass}
-              />
-            </Field>
-          </div>
-          <Field label="Folder">
-            <select
-              name="folderId"
-              defaultValue={d?.folderId ?? folderId ?? ''}
+          <Field label="Account (optional)">
+            <input
+              value={form.label}
+              onChange={set('label')}
+              placeholder="you@example.com"
               className={inputClass}
-            >
-              <option value="">No folder</option>
-              {vault.folders.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.data.name}
-                </option>
-              ))}
-            </select>
+            />
           </Field>
-          <Button disabled={busy}>{editing ? 'Save' : 'Add account'}</Button>
-          {editing && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-danger"
-              disabled={busy}
-              onClick={() =>
-                confirm('Delete this account? You may lose access to the site.') &&
-                run(async () => {
-                  await vault.remove(editing.id);
-                  onClose();
-                })
-              }
-            >
+          <Field label="Key">
+            <input
+              value={form.secret}
+              onChange={set('secret')}
+              onBlur={() => setTouchedKey(true)}
+              placeholder="JBSW Y3DP EHPK 3PXP"
+              className={`${inputClass} font-mono uppercase`}
+              autoComplete="off"
+              spellCheck={false}
+              aria-invalid={touchedKey && !!keyError}
+              aria-describedby="key-help"
+            />
+          </Field>
+          <p
+            id="key-help"
+            className={`text-xs ${touchedKey && keyError ? 'text-danger' : 'text-muted'}`}
+            aria-live="polite"
+          >
+            {touchedKey && keyError
+              ? keyError
+              : 'The key the website shows under “Can’t scan the code?”. Spaces are fine.'}
+          </p>
+          {vault.folders.length > 0 && (
+            <Field label="Folder">
+              <select value={form.folderId} onChange={set('folderId')} className={inputClass}>
+                <option value="">No folder</option>
+                {vault.folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.data.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <button
+            type="button"
+            onClick={() => setAdvanced(!advanced)}
+            aria-expanded={advanced}
+            className="text-xs font-medium text-muted hover:text-fg"
+          >
+            {advanced ? '▾' : '▸'} Advanced
+          </button>
+          {advanced && (
+            <div className="grid grid-cols-3 gap-2">
+              <Field label="Algorithm">
+                <select value={form.algorithm} onChange={set('algorithm')} className={inputClass}>
+                  <option>SHA1</option>
+                  <option>SHA256</option>
+                  <option>SHA512</option>
+                </select>
+              </Field>
+              <Field label="Digits">
+                <select value={form.digits} onChange={set('digits')} className={inputClass}>
+                  <option>6</option>
+                  <option>7</option>
+                  <option>8</option>
+                </select>
+              </Field>
+              <Field label="Period (s)">
+                <input
+                  type="number"
+                  min={10}
+                  max={120}
+                  value={form.period}
+                  onChange={set('period')}
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+          )}
+          <Button disabled={!canSave}>{editing ? 'Save' : 'Add account'}</Button>
+          {editing && onDelete && (
+            <Button type="button" variant="danger" disabled={busy} onClick={onDelete}>
               Delete account
             </Button>
           )}
         </form>
       )}
 
-      {tab === 'qr' && found.length === 0 && (
-        <label className="block cursor-pointer rounded-xl border-2 border-dashed border-line p-8 text-center text-sm text-muted">
-          Choose a screenshot of the QR code
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) run(async () => parse(await readQrFromFile(file)));
-            }}
-          />
-        </label>
-      )}
-
-      {tab === 'paste' && found.length === 0 && (
-        <form
-          className="space-y-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const text = String(new FormData(e.currentTarget).get('text'));
-            run(async () => parse(text));
-          }}
-        >
-          <textarea
-            name="text"
-            rows={6}
-            className={`${inputClass} font-mono text-xs`}
-            placeholder="otpauth://totp/...  or  otpauth-migration://offline?data=...  or 2FAS / Aegis JSON (unencrypted)"
-          />
-          <Button disabled={busy}>Read</Button>
-        </form>
-      )}
-
       {found.length > 0 && (
         <div className="space-y-3">
-          <p className="text-sm">Found {found.length} new account(s):</p>
+          <p className="text-sm">
+            Found {found.length} new account{found.length === 1 ? '' : 's'}:
+          </p>
           <ul className="max-h-48 space-y-1 overflow-auto text-sm">
             {found.map((a, i) => (
               <li key={i} className="rounded-lg bg-surface-muted px-3 py-1.5">
-                {a.issuer || '—'} · {a.label}
+                <span className="font-medium">{a.issuer || '—'}</span>{' '}
+                <span className="text-muted">{a.label}</span>
               </li>
             ))}
           </ul>
           <Button disabled={busy} onClick={importFound}>
-            Import {found.length}
+            {found.length === 1 ? 'Add it' : `Add all ${found.length}`}
+          </Button>
+          <Button variant="ghost" onClick={() => setFound([])}>
+            Choose another image
           </Button>
         </div>
       )}
 
-      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-danger">
+          {error}
+        </p>
+      )}
+
+      {!editing && (
+        <p className="mt-4 text-center text-xs text-muted">
+          Importing from another app?{' '}
+          <Link
+            href="/settings#import"
+            className="font-medium text-accent underline"
+            onClick={onClose}
+          >
+            Go to Settings → Import
+          </Link>
+        </p>
+      )}
     </Dialog>
   );
 }

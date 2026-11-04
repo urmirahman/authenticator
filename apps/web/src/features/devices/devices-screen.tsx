@@ -3,6 +3,7 @@
 import type { Device } from '@repo/types';
 import { useEffect, useState } from 'react';
 import { PageTitle } from '@/components/ui';
+import { useDialogs } from '@/components/dialogs';
 import { session } from '@/features/session/session';
 import { api } from '@/lib/api';
 
@@ -17,8 +18,16 @@ export function DevicesScreen() {
     load();
   }, []);
 
+  const ask = useDialogs();
+
   const revoke = async (d: Device) => {
-    if (!confirm(`Sign out "${d.name}"?`)) return;
+    const ok = await ask.confirm({
+      title: `Sign out “${d.name}”?`,
+      message: 'That device will need to sign in again to see your codes.',
+      confirmLabel: 'Sign out',
+      danger: true,
+    });
+    if (!ok) return;
     await api.devices.revoke(d.id).catch((e: Error) => setError(e.message));
     load();
   };
@@ -54,6 +63,7 @@ export function DevicesScreen() {
           ))}
         </ul>
       )}
+      {ask.dialogs}
     </>
   );
 }
