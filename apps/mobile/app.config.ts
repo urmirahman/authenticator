@@ -12,6 +12,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // User-facing brand name (docs/BRAND.md). slug/scheme/bundle id stay as-is: OAuth clients depend on them.
   name: 'Bloom',
   slug: 'authenticator',
+  // Expo account that owns the EAS project (personal account).
+  owner: 'rahmanurmi',
   // App scheme first. `exp+authenticator` is the dev-client launch scheme: `expo run` prefers
   // `exp+` schemes, otherwise it picks the LONGEST scheme (the Google reversed client id) and the
   // simulator launch times out. Deep links keep using `authenticator://`.
@@ -82,5 +84,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     webUrl: process.env.EXPO_PUBLIC_WEB_URL ?? 'http://localhost:3001',
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787',
+    eas: { projectId: '9137787b-f54d-409d-8c4e-42f7f574bdb4' },
   },
 });
