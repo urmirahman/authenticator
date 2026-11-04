@@ -11,14 +11,13 @@ import { Field, inputClass, Notice } from '@/components/ui';
 import { api, completeSignIn, DEV_AUTH } from '@/lib/api';
 import { signInWithPasskey } from './passkey';
 
+/** Google is the only sign-in provider for launch (ADR 39). Server code for others stays, unregistered. */
 const PROVIDERS: Array<{ id: OAuthProvider; label: string }> = [
   { id: 'google', label: 'Continue with Google' },
-  { id: 'apple', label: 'Continue with Apple' },
-  { id: 'facebook', label: 'Continue with Facebook' },
 ];
 
 /**
- * OAuth flow (web): we send the browser to the API, the API sends it to Google/Apple/Facebook,
+ * OAuth flow (web): we send the browser to the API, the API sends it to Google,
  * which sends it back to the API, which finally redirects to /auth/callback?code=... (one-time code).
  */
 export function SignInCard() {

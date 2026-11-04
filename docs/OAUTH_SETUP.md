@@ -1,4 +1,14 @@
-# OAuth setup (Google, Facebook, Apple)
+# OAuth setup (Google)
+
+> **Launch decision (ADR 39): Google is the only sign-in option on web and mobile.** The server
+> still contains Facebook and Apple provider code, but a provider is only registered when its
+> client id is set, so leave `FACEBOOK_*` and `APPLE_*` empty. Their sections below are kept for later.
+>
+> **Mobile:** the "Continue with Google" button always shows. If the current platform's client id
+> is missing it shows "Google sign-in isn't set up on this device yet" instead of signing in.
+> iOS needs `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`; Android needs `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
+> **and** `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`. `EXPO_PUBLIC_*` values are baked in when Metro bundles,
+> so after editing `apps/mobile/.env` restart Metro with `npx expo start --dev-client --clear`.
 
 The server reads everything from environment variables (`apps/server/.env.example`).
 A provider is **switched off** until its client id is set; `/start` then answers 404.
@@ -42,7 +52,7 @@ The app uses `@react-native-google-signin/google-signin` (ADR 34), so it needs a
 4. `cd apps/mobile && npx expo prebuild --clean && npx expo run:ios`. Re-run prebuild whenever the iOS client id changes.
 5. Tap **Continue with Google**. The button is hidden on any platform whose client id is empty (Android until you add one).
 
-## Facebook (Meta)
+## Facebook (Meta) — not used at launch
 
 1. <https://developers.facebook.com> → **My Apps → Create app** → use case "Authenticate and request data from users with Facebook Login".
 2. **Facebook Login → Settings**: Valid OAuth Redirect URIs = the Facebook callback above.
@@ -50,7 +60,7 @@ The app uses `@react-native-google-signin/google-signin` (ADR 34), so it needs a
 4. Request the `email` permission. Note: we never link accounts by a Facebook email (Facebook doesn't say it is verified).
 5. Mobile: the native SDK gives an access token → `POST /v1/auth/oauth/facebook/token {"accessToken": "..."}`.
 
-## Apple (Sign in with Apple)
+## Apple (Sign in with Apple) — not used at launch
 
 Needs a paid Apple Developer account.
 

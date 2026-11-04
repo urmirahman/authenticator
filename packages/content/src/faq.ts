@@ -33,7 +33,7 @@ export const faqs: Faq[] = [
   },
   {
     q: 'Why do I need both a sign-in and a master password?',
-    a: 'Signing in (Google, Apple, Facebook or a passkey) proves who you are so we can sync your vault. The master password is what decrypts it, and it never leaves your device.',
+    a: 'Signing in (Google or a passkey) proves who you are so we can sync your vault. The master password is what decrypts it, and it never leaves your device.',
   },
   {
     q: 'Is biometric unlock safe?',

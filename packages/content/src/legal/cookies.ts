@@ -15,7 +15,7 @@ so we don't show a cookie consent banner.
 | \`auth.deviceId\` | localStorage | Identifies this browser in "Devices" | Until you sign out |
 | \`settings\` | localStorage | Your preferences: auto-lock, clipboard clear, theme | Until you clear it |
 
-**Cookies:** Bloom itself sets no cookies. When you choose "Continue with Google / Apple / Facebook", that
+**Cookies:** Bloom itself sets no cookies. When you choose "Continue with Google", that
 provider's sign-in page may set its own cookies under its policy.
 
 **Never stored:** your master password and your unlocked vault key. The key is kept in memory only and is

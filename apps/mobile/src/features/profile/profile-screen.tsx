@@ -22,10 +22,9 @@ import { api, signOut } from '@/lib/api';
 import { useHaptics } from '@/lib/motion';
 import { monthYear, timeAgo } from '@/lib/time';
 
-const PROVIDERS: Array<{ id: 'google' | 'apple' | 'facebook'; label: string; icon: IconName }> = [
+/** Google is the only sign-in method for launch (ADR 39). */
+const PROVIDERS: Array<{ id: 'google'; label: string; icon: IconName }> = [
   { id: 'google', label: 'Google', icon: 'logo-google' },
-  { id: 'apple', label: 'Apple', icon: 'logo-apple' },
-  { id: 'facebook', label: 'Facebook', icon: 'logo-facebook' },
 ];
 
 /** Profile: who you are, how you sign in, what's in your vault, and quick links. */

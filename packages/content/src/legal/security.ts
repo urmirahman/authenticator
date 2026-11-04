@@ -12,7 +12,7 @@ Bloom is built so that **a breach of our servers would not reveal your codes**. 
 3. Only the vault key **wrapped** by your password key is sent to us. Unlocking happens on your device.
 4. Encrypted backups use a separate backup password the same way.
 
-Sign-in (Google / Apple / Facebook / passkeys) proves who you are; the master password is what decrypts.
+Sign-in (Google / passkeys) proves who you are; the master password is what decrypts.
 
 ## What we protect against
 - A copy of our database leaking: attackers get ciphertext and must brute-force your master password,

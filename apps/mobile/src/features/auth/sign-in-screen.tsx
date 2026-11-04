@@ -1,5 +1,4 @@
 import { brand } from '@repo/brand';
-import type { OAuthProvider } from '@repo/types';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -18,20 +17,10 @@ import { openWebPage } from '@/lib/web-url';
 import { api, completeSignIn, DEV_AUTH } from '@/lib/api';
 import { googleSignInConfigured, signInWithGoogle } from './google-sign-in';
 
-/** Providers still waiting for setup. Google is real (below) and hidden when not configured. */
-const PLACEHOLDERS: Array<{
-  id: OAuthProvider;
-  label: string;
-  icon: 'logo-apple' | 'logo-facebook';
-}> = [
-  { id: 'apple', label: 'Continue with Apple', icon: 'logo-apple' },
-  { id: 'facebook', label: 'Continue with Facebook', icon: 'logo-facebook' },
-];
-
 /**
- * OAuth on mobile uses the native SDKs. They return an id_token / auth code, which we send to
- * api.auth.nativeSignIn(provider, ...). Google is wired up (google-sign-in.ts); Apple and Facebook
- * still need their app IDs, so those buttons are placeholders.
+ * Google is the only sign-in option for launch (ADR 39). The native Google SDK returns an
+ * id_token, which we send to api.auth.nativeSignIn('google', ...). The button always shows; if
+ * this platform's client id is missing we explain that inline instead of hiding it.
  */
 export function SignInScreen() {
   const c = useColors();
@@ -39,7 +28,7 @@ export function SignInScreen() {
   const [email, setEmail] = useState('dev@example.com');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [soon, setSoon] = useState<string | null>(null);
+  const [setupMissing, setSetupMissing] = useState(false);
 
   const devLogin = async () => {
     setBusy(true);
@@ -55,6 +44,10 @@ export function SignInScreen() {
   };
 
   const google = async () => {
+    if (!googleSignInConfigured) {
+      setSetupMissing(true);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -82,27 +75,12 @@ export function SignInScreen() {
               <Text style={[s.tagline, { color: c.muted }]}>{brand.tagline}</Text>
             </View>
           </FadeIn>
-          {googleSignInConfigured && (
-            <Button
-              icon="logo-google"
-              title="Continue with Google"
-              onPress={google}
-              disabled={busy}
-            />
-          )}
-          {PLACEHOLDERS.map((p) => (
-            <Button
-              key={p.id}
-              icon={p.icon}
-              variant="secondary"
-              title={p.label}
-              onPress={() =>
-                setSoon(
-                  `${p.label.replace('Continue with ', '')} sign-in is coming soon. For now, use Google.`,
-                )
-              }
-            />
-          ))}
+          <Button
+            icon="logo-google"
+            title={busy ? 'Signing in…' : 'Continue with Google'}
+            onPress={google}
+            disabled={busy}
+          />
           {DEV_AUTH && (
             <Card style={s.dev}>
               <Label>Developer sign-in (local only)</Label>
@@ -115,7 +93,17 @@ export function SignInScreen() {
               />
             </Card>
           )}
-          {soon && <Notice onDismiss={() => setSoon(null)}>{soon}</Notice>}
+          {setupMissing && (
+            <Notice onDismiss={() => setSetupMissing(false)}>
+              Google sign-in isn’t set up on this device yet. It needs a Google client id for{' '}
+              {Platform.OS === 'ios'
+                ? 'iOS'
+                : Platform.OS === 'android'
+                  ? 'Android'
+                  : 'this platform'}
+              {DEV_AUTH ? ' — use developer sign-in below for now.' : '.'}
+            </Notice>
+          )}
           {error && <Text style={[ui.error, { textAlign: 'center' }]}>{error}</Text>}
           <Text style={[s.legal, { color: c.muted }]}>
             By continuing you agree to the{' '}

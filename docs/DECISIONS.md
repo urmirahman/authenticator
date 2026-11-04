@@ -65,3 +65,10 @@
     - _Why:_ the owner wanted a mark in the spirit of code-bloom.net's infinity logo. We drew an original one (a Bernoulli lemniscate path, our own padlock) rather than copying their artwork, which is their trademark.
     - Infinity = codes that keep renewing; the padlock = end-to-end encryption. The gradient ties the rose/violet app palette to the multicolour landing theme.
     - The padlock is masked out of the loop so it stays legible at 16-32 px; a light-lock variant exists for dark backgrounds (mobile splash, dark screens), and the web React mark takes the lock colour from the page text colour.
+
+39. **Google is the only sign-in option for launch (web and mobile).**
+    - _Why:_ the owner wants one simple, familiar way in. Apple and Facebook buttons were placeholders that only said "coming soon", which looked unfinished.
+    - Web and mobile show only "Continue with Google" (web also keeps passkey sign-in for returning users). Profile lists Google as the only linked method; legal, help and FAQ copy mention only Google.
+    - The Go server keeps its Facebook and Apple provider code; providers register only when their client ids are set, so they stay off.
+    - Mobile always shows the Google button. If the platform client id is missing (for example Android without `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`), tapping it shows a friendly inline note instead of hiding the only way in.
+    - _Risk to revisit:_ App Store Review Guideline 4.8 generally requires Sign in with Apple when an app offers a third-party login such as Google. Re-check before submitting to the App Store.

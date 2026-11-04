@@ -30,8 +30,8 @@ Priority: P0 = must have before public launch, P1 = soon after, P2 = nice to hav
 | P0  | Onboarding: master password explainer, "cannot be recovered" warning, printable recovery kit (no password) | [now]                                       |
 | P0  | Account deletion with confirmation + recent sign-in (re-auth)                                              | [now]                                       |
 | P0  | Google sign-in (web + iOS)                                                                                 | done; testing [her]                         |
-| P0  | Apple sign-in (required by App Store if Google is offered)                                                 | [her] Apple Developer account, then [later] |
-| P1  | Facebook sign-in                                                                                           | [her] Meta app, then [later]                |
+| P1  | Apple sign-in — deferred (ADR 39); check App Store rule 4.8 before iOS submission                          | [her] Apple Developer account, then [later] |
+| P2  | Facebook sign-in — deferred (ADR 39)                                                                       | [her] Meta app, then [later]                |
 | P1  | Email notifications (new device sign-in, account deletion)                                                 | [her] email provider, then [later]          |
 | P2  | Recovery codes / trusted-contact recovery (needs crypto design review)                                     | [later]                                     |
 

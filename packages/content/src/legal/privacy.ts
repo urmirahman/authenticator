@@ -17,7 +17,7 @@ two-factor codes or secrets**. They are encrypted on your device before they rea
 ## What we collect
 | Data | Why | Kept |
 | --- | --- | --- |
-| Email address, display name, avatar URL from Google / Apple / Facebook | Create and identify your account | Until you delete your account |
+| Email address, display name, avatar URL from Google | Create and identify your account | Until you delete your account |
 | Sign-in provider id (e.g. Google user id) | Link your sign-in method to your account | Until you delete your account |
 | Devices (name like "Chrome (web)", platform, last seen) | Show your devices and let you sign them out | Until removed or account deleted |
 | Sessions (hashed refresh token, IP address, browser/app user agent) | Keep you signed in securely, detect misuse | Until expiry or sign-out |
@@ -33,7 +33,7 @@ Contract (to provide the service you signed up for) and legitimate interests (se
 
 ## Who processes data for us
 Bloom runs on servers and a database operated for us by our hosting provider. We will name every provider that processes personal data, and where they are located, on this page before they are used; we will never sell or share your data for advertising.
-Sign-in providers (Google, Apple, Meta) process data under their own policies when you use them.
+Google processes sign-in data under its own policy when you use it.
 
 ## Your choices and rights
 - **Download your data:** Settings → "Download my data" (JSON; vault items stay encrypted).
