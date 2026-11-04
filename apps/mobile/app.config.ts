@@ -28,7 +28,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: 'dev.urmirahman.authenticator',
-    adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#fff1f4' },
+    adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#ffffff' },
   },
   plugins: [
     'expo-router',
@@ -39,7 +39,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         image: './assets/splash-icon.png',
         imageWidth: 180,
         backgroundColor: '#faf8f7',
-        dark: { image: './assets/splash-icon.png', backgroundColor: '#0f0d11' },
+        dark: { image: './assets/splash-icon-dark.png', backgroundColor: '#1c1820' },
       },
     ],
     [

@@ -11,7 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { logoMark } from '@/components/brand-images';
+import { useLogoMark } from '@/components/brand-images';
 import { useColors } from '@/components/theme';
 import { Button, FadeIn, IconBubble, Input, Label, styles as ui } from '@/components/ui';
 import { useHaptics } from '@/lib/motion';
@@ -38,13 +38,14 @@ const INTRO = [
 /** First-run explainer shown before creating the master password. */
 function Onboarding({ onDone }: { onDone: () => void }) {
   const c = useColors();
+  const mark = useLogoMark();
   const [step, setStep] = useState(0);
   const last = step === INTRO.length - 1;
   const page = INTRO[step]!;
   return (
     <View style={[s.container, { backgroundColor: c.bg }]}>
       <View style={s.inner}>
-        <Image source={logoMark} style={s.logo} accessibilityLabel="Bloom logo" />
+        <Image source={mark} style={s.logo} accessibilityLabel="Bloom logo" />
         <View style={s.dots} accessible accessibilityLabel={`Step ${step + 1} of ${INTRO.length}`}>
           {INTRO.map((_, i) => (
             <View
@@ -84,6 +85,7 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 export function UnlockScreen() {
   const vault = useVault();
   const c = useColors();
+  const mark = useLogoMark();
   const haptic = useHaptics();
   const isSetup = vault.status === 'needs-setup';
   const [password, setPassword] = useState('');
@@ -139,7 +141,7 @@ export function UnlockScreen() {
     >
       <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
         <View style={s.inner}>
-          <Image source={logoMark} style={s.logo} accessibilityLabel="Bloom logo" />
+          <Image source={mark} style={s.logo} accessibilityLabel="Bloom logo" />
           <Text
             accessibilityRole="header"
             style={[s.title, { color: c.text, textAlign: 'center' }]}

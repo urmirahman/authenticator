@@ -20,7 +20,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useHaptics, useReduceMotion } from '@/lib/motion';
-import { logoMark } from './brand-images';
+import { useLogoMark } from './brand-images';
 import { useColors } from './theme';
 
 /**
@@ -471,10 +471,11 @@ export function EmptyState({
   action?: { title: string; onPress: () => void };
 }) {
   const c = useColors();
+  const mark = useLogoMark();
   return (
     <FadeIn>
       <View style={styles.empty}>
-        <Image source={logoMark} style={styles.emptyMark} accessibilityIgnoresInvertColors />
+        <Image source={mark} style={styles.emptyMark} accessibilityIgnoresInvertColors />
         <Text style={[styles.emptyTitle, { color: c.text }]}>{title}</Text>
         {body && (
           <Text style={{ color: c.muted, textAlign: 'center', lineHeight: 21 }}>{body}</Text>

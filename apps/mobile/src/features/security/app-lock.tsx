@@ -1,4 +1,4 @@
-import { logoMark } from '@/components/brand-images';
+import { logoMarkDark } from '@/components/brand-images';
 import { dark } from '@repo/brand';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { usePreventScreenCapture } from 'expo-screen-capture';
@@ -66,7 +66,7 @@ export function AppLock({ children }: { children: ReactNode }) {
       {children}
       {(covered || needsBiometric) && (
         <View style={styles.cover}>
-          <Image source={logoMark} style={styles.logo} accessibilityLabel="Bloom is locked" />
+          <Image source={logoMarkDark} style={styles.logo} accessibilityLabel="Bloom is locked" />
           {needsBiometric && !covered && (
             <Pressable
               style={styles.button}

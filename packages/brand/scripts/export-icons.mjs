@@ -24,6 +24,8 @@ const jobs = [
   ['app-icon.svg', 'apps/mobile/assets/icon.png', 1024],
   ['adaptive-foreground.svg', 'apps/mobile/assets/adaptive-icon.png', 1024],
   ['adaptive-foreground.svg', 'apps/mobile/assets/splash-icon.png', 1024],
+  // lock drawn light for dark backgrounds (dark splash, in-app dark screens)
+  ['adaptive-foreground-dark.svg', 'apps/mobile/assets/splash-icon-dark.png', 1024],
 ];
 
 for (const [src, out, size] of jobs) {
@@ -35,7 +37,7 @@ for (const [src, out, size] of jobs) {
 
 // Open Graph image 1200x630: wordmark on the light background.
 const og = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
-  <rect width="1200" height="630" fill="#faf8f7"/>
+  <rect width="1200" height="630" fill="#ffffff"/>
   <g transform="translate(160 200) scale(1.7)" color="#17151a">${asset('wordmark.svg')
     .toString()
     .replace(/<\?xml[^>]*>/, '')

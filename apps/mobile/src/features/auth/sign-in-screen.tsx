@@ -12,7 +12,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { logoMark } from '@/components/brand-images';
+import { useLogoMark } from '@/components/brand-images';
 import { useColors } from '@/components/theme';
 import { Button, Card, FadeIn, Input, Label, styles as ui } from '@/components/ui';
 import { openWebPage } from '@/lib/web-url';
@@ -36,6 +36,7 @@ const PLACEHOLDERS: Array<{
  */
 export function SignInScreen() {
   const c = useColors();
+  const mark = useLogoMark();
   const [email, setEmail] = useState('dev@example.com');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -74,7 +75,7 @@ export function SignInScreen() {
         <View style={s.inner}>
           <FadeIn>
             <View style={s.hero}>
-              <Image source={logoMark} style={s.logo} accessibilityLabel="Bloom logo" />
+              <Image source={mark} style={s.logo} accessibilityLabel="Bloom logo" />
               <Text style={[s.title, { color: c.text }]} accessibilityRole="header">
                 Welcome to Bloom
               </Text>
