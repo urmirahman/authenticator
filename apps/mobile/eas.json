@@ -1,13 +1,45 @@
 {
-  "cli": { "appVersionSource": "local" },
+  "cli": {
+    "appVersionSource": "local"
+  },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      }
     },
-    "preview": { "distribution": "internal", "android": { "buildType": "apk" } },
-    "production": { "distribution": "store", "android": { "buildType": "app-bundle" } }
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://bloom-auth-server.vercel.app",
+        "EXPO_PUBLIC_WEB_URL": "https://bloomautenticator.vercel.app",
+        "EXPO_PUBLIC_DEV_AUTH": "false",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "309065581096-03ubmcvsicl4t6st0t57q0r8tb5p9pi5.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "309065581096-elv69hjf8d80itq42p49mt5rlqe592d6.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "309065581096-eaaps71lgmv78bf03b7p6qh0t9ldmcmm.apps.googleusercontent.com"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://bloom-auth-server.vercel.app",
+        "EXPO_PUBLIC_WEB_URL": "https://bloomautenticator.vercel.app",
+        "EXPO_PUBLIC_DEV_AUTH": "false",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "309065581096-03ubmcvsicl4t6st0t57q0r8tb5p9pi5.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "309065581096-elv69hjf8d80itq42p49mt5rlqe592d6.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "309065581096-eaaps71lgmv78bf03b7p6qh0t9ldmcmm.apps.googleusercontent.com"
+      }
+    }
   },
-  "submit": { "production": {} }
+  "submit": {
+    "production": {}
+  }
 }
