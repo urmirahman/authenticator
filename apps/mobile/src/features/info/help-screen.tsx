@@ -1,8 +1,8 @@
 import { brand } from '@repo/brand';
-import { faqs, legalLinks } from '@repo/content';
+import { faqs, legalLinks, site } from '@repo/content';
 import Constants from 'expo-constants';
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { appIcon } from '@/components/brand-images';
 import { useColors } from '@/components/theme';
 import { Group, Muted, Row, Screen, Section } from '@/components/ui';
@@ -43,6 +43,16 @@ export function HelpScreen() {
           </Pressable>
         ))}
       </Section>
+
+      <Group title="Contact">
+        <Row
+          icon="mail-outline"
+          label={`Email ${site.contactEmail}`}
+          external
+          onPress={() => Linking.openURL(`mailto:${site.contactEmail}`)}
+          last
+        />
+      </Group>
 
       <Group title="Legal & security">
         {legalLinks

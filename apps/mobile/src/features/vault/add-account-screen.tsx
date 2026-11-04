@@ -9,7 +9,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/components/theme';
 import {
   Button,
@@ -25,6 +25,7 @@ import {
 import { useHaptics } from '@/lib/motion';
 import { ExpiryField } from './expiry-field';
 import { FolderPicker } from './folder-picker';
+import { NO_QR_MESSAGE, pickQrImages } from './qr-images';
 import { useVault } from './vault-store';
 
 /**
@@ -66,6 +67,16 @@ export function AddAccountScreen() {
       setError(e instanceof Error ? e.message : 'Not an authenticator QR code');
       setTimeout(() => (scanned.current = false), 1500);
     }
+  };
+
+  const fromPhotos = async () => {
+    setError(null);
+    const res = await pickQrImages(false);
+    if (!res) return;
+    if (res.texts.length === 0) return setError(NO_QR_MESSAGE);
+    scanned.current = false;
+    haptic('success');
+    onScan(res.texts[0] ?? '');
   };
 
   const saveAll = async (accounts: ImportedAccount[]) => {
@@ -144,9 +155,20 @@ export function AddAccountScreen() {
         !permission ? null : !permission.granted ? (
           <View style={[s.pad, s.centered]}>
             <IconBubble name="camera-outline" />
-            <Text style={[s.title, { color: c.text }]}>Camera, please?</Text>
-            <Muted>Bloom only uses it to read the QR code a site shows when you turn on 2FA.</Muted>
-            <Button title="Allow camera" onPress={requestPermission} />
+            <Text style={[s.title, { color: c.text }]}>
+              {permission.canAskAgain ? 'Camera, please?' : 'The camera is turned off for Bloom'}
+            </Text>
+            <Muted>
+              {permission.canAskAgain
+                ? 'Bloom only uses it to read the QR code a site shows when you turn on 2FA.'
+                : 'That’s okay. Turn it on in Settings, choose a screenshot instead, or type the key.'}
+            </Muted>
+            {permission.canAskAgain ? (
+              <Button title="Allow camera" onPress={requestPermission} />
+            ) : (
+              <Button title="Open Settings" onPress={() => Linking.openSettings()} />
+            )}
+            <Button variant="secondary" title="Choose from photos" onPress={fromPhotos} />
           </View>
         ) : (
           <View style={s.flex}>
@@ -162,6 +184,14 @@ export function AddAccountScreen() {
             <View pointerEvents="none" style={[StyleSheet.absoluteFill, s.centered]}>
               <View style={[s.frame, { borderColor: c.accent }]} />
               <Text style={s.scanHint}>Point at the QR code</Text>
+            </View>
+            <View style={s.bottom}>
+              <Button
+                variant="secondary"
+                icon="images-outline"
+                title="Choose from photos"
+                onPress={fromPhotos}
+              />
             </View>
           </View>
         )
@@ -225,6 +255,16 @@ export function AddAccountScreen() {
         </ScrollView>
       )}
       {error && <Text style={[ui.error, s.center]}>{error}</Text>}
+      <Pressable
+        onPress={() => router.replace('/import')}
+        accessibilityRole="link"
+        style={s.importLink}
+      >
+        <Text style={{ color: c.muted, textAlign: 'center' }}>
+          Importing from another app?{' '}
+          <Text style={{ color: c.accent, fontWeight: '600' }}>Import</Text>
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -236,6 +276,8 @@ const s = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700' },
   center: { textAlign: 'center', padding: 8 },
   centered: { alignItems: 'center', justifyContent: 'center', flex: 1 },
+  bottom: { position: 'absolute', left: 20, right: 20, bottom: 24 },
+  importLink: { padding: 14 },
   frame: { width: 240, height: 240, borderWidth: 3, borderRadius: 32 },
   scanHint: {
     color: 'white',

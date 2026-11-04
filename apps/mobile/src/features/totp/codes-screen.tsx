@@ -351,6 +351,17 @@ export function CodesScreen() {
         title={prompt === 'new' ? 'New folder' : 'Rename folder'}
         initial={prompt === 'rename' ? (current?.data.name ?? '') : ''}
         onCancel={() => setPrompt(null)}
+        placeholder="e.g. Work"
+        confirmLabel={prompt === 'new' ? 'Create' : 'Save'}
+        validate={(name) =>
+          vault.folders.some(
+            (f) =>
+              f.id !== (prompt === 'rename' ? current?.id : undefined) &&
+              f.data.name.toLowerCase() === name.toLowerCase(),
+          )
+            ? 'You already have a folder with that name.'
+            : null
+        }
         onSubmit={async (name) => {
           if (!name) return;
           if (prompt === 'new') setFolder(await vault.save('folder', { name }));

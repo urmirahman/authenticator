@@ -47,6 +47,7 @@ export default function AppLayout() {
         name="edit-account"
         options={{ title: 'Edit account', presentation: 'modal' }}
       />
+      <Stack.Screen name="import" options={{ title: 'Import accounts' }} />
       <Stack.Screen name="backups" options={{ title: 'Encrypted backups' }} />
       <Stack.Screen name="transfer" options={{ title: 'Move to a new phone' }} />
       <Stack.Screen name="devices" options={{ title: 'Devices' }} />

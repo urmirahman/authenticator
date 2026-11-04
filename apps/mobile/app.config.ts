@@ -55,7 +55,25 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           ] as [string, object],
         ]
       : []),
-    ['expo-camera', { cameraPermission: 'Allow Bloom to scan QR codes to add accounts.' }],
+    [
+      'expo-camera',
+      {
+        cameraPermission:
+          'Bloom uses the camera only to scan the QR code a website shows when you turn on 2FA.',
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
+    [
+      'expo-image-picker',
+      {
+        photosPermission:
+          'Bloom reads a QR code from the screenshot you choose. Nothing is uploaded.',
+        cameraPermission: false,
+        microphonePermission: false,
+      },
+    ],
+    '@react-native-community/datetimepicker',
   ],
   experiments: { typedRoutes: true },
   extra: {

@@ -207,6 +207,11 @@ export function SettingsScreen() {
 
       <Group title="Your data">
         <Row
+          icon="swap-horizontal-outline"
+          label="Import from another app"
+          onPress={() => router.push('/import')}
+        />
+        <Row
           icon="cloud-upload-outline"
           label="Encrypted backups"
           onPress={() => router.push('/backups')}
