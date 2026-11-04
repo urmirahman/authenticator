@@ -75,3 +75,91 @@ body {
     transform: translateX(0);
   }
 }
+
+/*
+ * "Meadow" landing theme (marketing + legal pages only, via .theme-meadow on the (public) layout).
+ * Palette inspired by code-bloom.net: paper greens, deep ink, emerald accent, coral/lilac glows.
+ * The app screens keep the rose Bloom tokens. Tailwind's --color-* resolve var() where they are
+ * declared, so the scope re-declares both the --bloom-* values and the --color-* aliases.
+ */
+@theme {
+  --color-meadow-night: #0a0a0a;
+  --color-meadow-night-soft: #151917;
+  --color-meadow-glow: #00b386;
+  --color-meadow-mint: #8ff2cf;
+  --color-meadow-lime: #c9f36b;
+  --color-meadow-coral: #ff806b;
+  --color-meadow-lilac: #e8d8ff;
+}
+
+.theme-meadow {
+  --bloom-bg: #f6f8f7;
+  --bloom-surface: #ffffff;
+  --bloom-surface-muted: #edf2ef;
+  --bloom-border: #d8ded7;
+  --bloom-text: #0a0a0a;
+  --bloom-text-muted: #5b625f; /* 6.0:1 on paper (theirs, #68706d, is 4.9:1) */
+  --bloom-accent: #006b4d; /* green-dark: 6.9:1 on white; #00a775 is only 3.1:1 */
+  --bloom-accent-text: #ffffff;
+  --bloom-accent-soft: #c9f4e2;
+  --meadow-glow-1: #00b38629;
+  --meadow-glow-2: #ff806b2e;
+  --meadow-glow-3: #e8d8ff40;
+
+  --color-bg: var(--bloom-bg);
+  --color-surface: var(--bloom-surface);
+  --color-surface-muted: var(--bloom-surface-muted);
+  --color-line: var(--bloom-border);
+  --color-fg: var(--bloom-text);
+  --color-muted: var(--bloom-text-muted);
+  --color-accent: var(--bloom-accent);
+  --color-accent-fg: var(--bloom-accent-text);
+  --color-accent-soft: var(--bloom-accent-soft);
+
+  background-color: var(--bloom-bg);
+  color: var(--bloom-text);
+}
+
+.dark .theme-meadow {
+  --bloom-bg: #101814;
+  --bloom-surface: #1c2922;
+  --bloom-surface-muted: #151e19;
+  --bloom-border: #35463c;
+  --bloom-text: #edf5ef;
+  --bloom-text-muted: #b6c4ba;
+  --bloom-accent: #26c99b;
+  --bloom-accent-text: #09120e;
+  --bloom-accent-soft: #254b3d;
+  --meadow-glow-1: #26c99b2e;
+  --meadow-glow-2: #ff806b1f;
+  --meadow-glow-3: #e8d8ff14;
+}
+
+/* Soft hero glow: emerald + coral + lilac blobs (static colours, gentle drift). */
+.meadow-glow {
+  background:
+    radial-gradient(circle at 72% 38%, var(--meadow-glow-1), transparent 45%),
+    radial-gradient(circle at 28% 70%, var(--meadow-glow-2), transparent 42%),
+    radial-gradient(circle at 55% 85%, var(--meadow-glow-3), transparent 40%);
+  animation: meadow-drift 14s ease-in-out infinite alternate;
+}
+/* Night band (CTA) like their dark hero: near-black with an emerald glow. */
+.meadow-night {
+  background:
+    radial-gradient(circle at 76% 30%, #00b38633, transparent 38%),
+    radial-gradient(circle at 18% 95%, #ffffff0d, transparent 30%), #0a0a0a;
+  color: #edf5ef;
+}
+@keyframes meadow-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-2%, 2%, 0) scale(1.05);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .meadow-glow {
+    animation: none;
+  }
+}

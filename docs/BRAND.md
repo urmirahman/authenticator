@@ -56,3 +56,21 @@ no "military-grade", no certifications we don't hold). Short sentences, second p
 - **Codes:** large monospace digits in the accent color, grouped 3-3 (4-4 for 8 digits), turning red in the last 5 seconds; countdown ring with seconds.
 - **Motion:** 260 ms fade-and-rise on first appearance, soft pulse for skeletons; none of it when Reduce Motion is on. Haptics: selection tick on taps, success on copy/save, warning on a wrong password.
 - **Microcopy:** short, kind, human ("Nothing blooming yet", "Welcome back", "Opening your vault…"). Never blame the user; say what to do next.
+
+## Landing "Meadow" palette (marketing and legal pages)
+
+Inspired by the colour mood of code-bloom.net (colours only, no logo, copy or layout). Scoped with `.theme-meadow` on the `(public)` layout in `apps/web/src/app/globals.css`; the app screens keep the rose tokens.
+
+| Role               | Light     | Dark      |
+| ------------------ | --------- | --------- |
+| Background (paper) | `#f6f8f7` | `#101814` |
+| Surface            | `#ffffff` | `#1c2922` |
+| Surface muted      | `#edf2ef` | `#151e19` |
+| Border             | `#d8ded7` | `#35463c` |
+| Text               | `#0a0a0a` | `#edf5ef` |
+| Muted text         | `#5b625f` | `#b6c4ba` |
+| Accent (buttons)   | `#006b4d` | `#26c99b` |
+| Text on accent     | `#ffffff` | `#09120e` |
+| Accent soft        | `#c9f4e2` | `#254b3d` |
+
+Extras: night band `#0a0a0a` with emerald glow `#00b386`, lime CTA `#c9f36b` with a coral `#ff806b` offset shadow, lilac `#e8d8ff` and coral blobs in the hero glow. The glow drifts slowly and stops under Reduce Motion.

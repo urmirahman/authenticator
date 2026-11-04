@@ -72,20 +72,20 @@ export default function LandingPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/sign-in"
-              className="rounded-md bg-accent px-5 py-3 font-semibold text-accent-fg hover:opacity-90"
+              className="rounded-full bg-accent px-5 py-3 font-semibold text-accent-fg hover:opacity-90"
             >
               Get started — it&apos;s free
             </Link>
             <Link
               href="#how"
-              className="rounded-md px-5 py-3 font-semibold ring-1 ring-line hover:bg-surface-muted"
+              className="rounded-full px-5 py-3 font-semibold ring-1 ring-[#b8c3ba] dark:ring-[#52675b] hover:bg-surface-muted"
             >
               How it works
             </Link>
           </div>
         </div>
         <div aria-hidden className="relative mx-auto">
-          <div className="absolute inset-0 -z-10 rounded-full bg-gradient-to-br from-rose-200/60 to-violet-400/30 blur-3xl" />
+          <div className="meadow-glow absolute -inset-16 -z-10 rounded-full blur-2xl" />
           <div className="rounded-xl bg-surface p-6 shadow-xl ring-1 ring-line">
             <div className="mb-4 flex items-center gap-3">
               <LogoMark size={40} />
@@ -189,14 +189,14 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section className="mx-auto mt-24 max-w-5xl px-4 sm:px-6">
-        <div className="flex flex-col items-center gap-4 rounded-xl bg-gradient-to-br from-rose-600 to-violet-600 px-6 py-12 text-center text-white">
+        <div className="meadow-night flex flex-col items-center gap-4 rounded-[36px] px-6 py-14 text-center">
           <h2 className="text-3xl font-bold">Let your codes bloom.</h2>
-          <p className="max-w-lg text-white/85">
+          <p className="max-w-lg text-[#b6c4ba]">
             Free while in beta. Set up in a minute; import from Google Authenticator in two.
           </p>
           <Link
             href="/sign-in"
-            className="rounded-md bg-white px-5 py-3 font-semibold text-rose-700 hover:bg-rose-50"
+            className="rounded-full bg-meadow-lime px-6 py-3 font-semibold text-meadow-night shadow-[5px_6px_0_var(--color-meadow-coral)] transition-transform hover:-translate-y-0.5 focus-visible:outline-meadow-lime motion-reduce:transition-none"
           >
             Create your vault
           </Link>
