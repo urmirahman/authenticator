@@ -55,7 +55,7 @@ const STEPS = [
   {
     n: 2,
     title: 'Your device makes the key',
-    text: 'Argon2id turns the password into a key; a random vault key encrypts every account with XChaCha20-Poly1305.',
+    text: 'Your password unlocks a private key that locks every account before it leaves your device.',
   },
   {
     n: 3,
@@ -165,13 +165,6 @@ export default function LandingPage() {
             </li>
           ))}
         </ol>
-        <div className="meadow-chip-lime mt-6 rounded-xl p-5 text-sm">
-          <strong>The honest part:</strong> because we can&apos;t read your vault, we can&apos;t
-          recover it either. Keep your master password safe and print the recovery kit.{' '}
-          <Link href="/security" className="font-semibold underline">
-            Read the full security model →
-          </Link>
-        </div>
       </section>
 
       {/* FAQ */}
