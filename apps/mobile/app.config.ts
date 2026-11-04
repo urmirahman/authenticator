@@ -12,7 +12,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // User-facing brand name (docs/BRAND.md). slug/scheme/bundle id stay as-is: OAuth clients depend on them.
   name: 'Bloom',
   slug: 'authenticator',
-  scheme: 'authenticator',
+  // App scheme first. `exp+authenticator` is the dev-client launch scheme: `expo run` prefers
+  // `exp+` schemes, otherwise it picks the LONGEST scheme (the Google reversed client id) and the
+  // simulator launch times out. Deep links keep using `authenticator://`.
+  scheme: ['authenticator', 'exp+authenticator'],
   version: '0.1.0',
   // Phones, tablets and landscape are all supported (layouts cap content width).
   orientation: 'default',
