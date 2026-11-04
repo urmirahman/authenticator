@@ -1,0 +1,9 @@
+# Only api/index.go is a function; keep tests, local binaries and docs out of the upload.
+api/*_test.go
+api/openapi.yaml
+bin/
+tmp/
+.env
+.env.*
+!.env.example
+Dockerfile

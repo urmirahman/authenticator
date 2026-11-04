@@ -72,3 +72,11 @@
     - The Go server keeps its Facebook and Apple provider code; providers register only when their client ids are set, so they stay off.
     - Mobile always shows the Google button. If the platform client id is missing (for example Android without `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`), tapping it shows a friendly inline note instead of hiding the only way in.
     - _Risk to revisit:_ App Store Review Guideline 4.8 generally requires Sign in with Apple when an app offers a third-party login such as Google. Re-check before submitting to the App Store.
+
+40. **Showcase hosting: Go API as a Vercel serverless function, Postgres on Neon (Singapore).**
+    - _Why:_ free, no card, non-commercial showcase. Oracle Cloud's free tier was out of capacity, so a VM wasn't possible.
+    - `api/index.go` (package `handler`) exports `Handler`; `vercel.json` rewrites `/(.*)` to it so `/v1/...` URLs don't change. It imports `pkg/serverless`, a thin public wrapper around `internal/app`, because Vercel compiles `api/` in a generated package that may not import `internal/`.
+    - Config, the pgx pool and the router are built lazily on the first request of each cold start (mutex, not `sync.Once`, so a failed start is retried). Pool: 4 connections; Neon's `-pooler` host switches pgx to `QueryExecModeExec` for PgBouncer transaction mode.
+    - Migrations are not run on cold start; they're run from a laptop with `go run ./cmd/migrate up` against Neon's direct URL.
+    - There were no background jobs. A new `GET /v1/internal/cleanup` (bearer `CRON_SECRET`) deletes expired OAuth states, login codes, WebAuthn challenges and old sessions, called by a daily Vercel Cron.
+    - Local dev (`cmd/api` with air on :8787) is unchanged. Trade-offs: cold starts, in-memory rate limits per instance, daily-only cron on Hobby. Steps in `docs/DEPLOY.md`.

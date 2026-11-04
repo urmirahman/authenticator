@@ -87,6 +87,9 @@ func NewRouter(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *
 
 	r := NewBaseRouter(cfg, log, pool)
 	r.Route("/v1", func(r chi.Router) {
+		if cfg.CronSecret != "" {
+			r.Get("/internal/cleanup", cleanupHandler(pool, cfg.CronSecret, log))
+		}
 		r.With(authLimit).Route("/auth", authH.Routes)
 		r.Route("/passkeys", func(r chi.Router) { passkeyH.Routes(r, requireAuth, authLimit) })
 		if cfg.DevAuth {

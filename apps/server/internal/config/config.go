@@ -47,6 +47,14 @@ type Config struct {
 	WebAuthnRPID      string // e.g. "localhost" or "auth.example.com"
 	WebAuthnRPName    string
 	WebAuthnRPOrigins []string
+
+	// CronSecret protects GET /v1/internal/cleanup (Vercel Cron sends "Authorization: Bearer
+	// <CRON_SECRET>"). Empty = the endpoint is not registered.
+	CronSecret string
+	// DBMaxConns caps the pgx pool. 0 = default (10 for the local server, 4 on serverless).
+	DBMaxConns int
+	// DBPooler forces pooler-safe query mode; also auto-detected from a "-pooler" host.
+	DBPooler bool
 }
 
 func Load() (*Config, error) {
@@ -77,6 +85,9 @@ func Load() (*Config, error) {
 		WebAuthnRPID:      get("WEBAUTHN_RP_ID", "localhost"),
 		WebAuthnRPName:    get("WEBAUTHN_RP_NAME", "Authenticator"),
 		WebAuthnRPOrigins: getList("WEBAUTHN_RP_ORIGINS", "http://localhost:3001"),
+		CronSecret:        get("CRON_SECRET", ""),
+		DBMaxConns:        getInt("DB_MAX_CONNS", 0),
+		DBPooler:          get("DB_POOLER", "false") == "true",
 	}
 	if cfg.JWTSecret == "" {
 		if cfg.Env == "production" {
