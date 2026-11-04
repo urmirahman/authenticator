@@ -18,7 +18,7 @@ const FEATURES = [
   {
     icon: '📷',
     title: 'Easy import',
-    text: 'Scan Google Authenticator export QR codes, or paste 2FAS / Aegis exports.',
+    text: 'Bring codes from Google Authenticator, 2FAS or Aegis in Settings → Import.',
   },
   {
     icon: '🗂️',
@@ -121,7 +121,7 @@ export default function LandingPage() {
       {/* Features */}
       <section aria-labelledby="features" className="mx-auto max-w-5xl px-4 sm:px-6">
         <h2 id="features" className="mb-8 text-2xl font-bold tracking-tight">
-          Everything you need, nothing you don&apos;t
+          Everything your codes need
         </h2>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (

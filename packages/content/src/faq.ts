@@ -24,7 +24,7 @@ export const faqs: Faq[] = [
   },
   {
     q: 'How do I move from Google Authenticator?',
-    a: 'In Google Authenticator choose "Transfer accounts → Export", then scan that QR code with Bloom (Add → QR image on web, or Scan QR on mobile). 2FAS and Aegis exports (unencrypted JSON) can be pasted too.',
+    a: 'In Google Authenticator choose "Transfer accounts → Export", then open Settings → Import in Bloom and scan the QR (or upload a screenshot on web). Unencrypted 2FAS and Aegis exports work too.',
     featured: true,
   },
   {
