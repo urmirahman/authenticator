@@ -21,6 +21,10 @@ export interface AccountData extends Omit<TotpAccount, 'id' | 'digits'> {
   type?: 'totp' | 'hotp';
   counter?: number;
   folderId?: string;
+  /** Optional last day this account is valid (YYYY-MM-DD). Missing = never expires. */
+  expiresAt?: string;
+  /** Item schema version (see ACCOUNT_SCHEMA_VERSION). Missing = v1, fully compatible. */
+  schema?: number;
 }
 
 /** What we put inside a "folder" item. */

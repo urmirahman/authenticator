@@ -1,4 +1,5 @@
 import type { ImportedAccount } from '@repo/importers';
+import { ACCOUNT_SCHEMA_VERSION } from './expiry';
 import type { AccountData } from './vault-codec';
 
 /** Importers produce ImportedAccount; the vault stores AccountData. Same info, tiny mapping. */
@@ -13,6 +14,7 @@ export function toAccountData(a: ImportedAccount, folderId?: string): AccountDat
     type: a.type,
     counter: a.counter,
     folderId,
+    schema: ACCOUNT_SCHEMA_VERSION,
   };
 }
 

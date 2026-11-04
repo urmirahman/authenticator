@@ -13,3 +13,4 @@ export * from './folders';
 export * from './strength';
 export * from './passkey-errors';
 export * from './secret-key';
+export * from './expiry';

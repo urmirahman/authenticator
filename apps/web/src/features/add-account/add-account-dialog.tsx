@@ -3,7 +3,15 @@
 import type { ImportedAccount } from '@repo/importers';
 import { Button } from '@repo/ui/button';
 import type { AccountData, Decrypted } from '@repo/vault';
-import { normalizeSecret, secretKeyError, toAccountData, friendlyKeyError } from '@repo/vault';
+import {
+  friendlyKeyError,
+  isExpiryDate,
+  normalizeSecret,
+  secretKeyError,
+  toAccountData,
+  toExpiryDate,
+  withExpiry,
+} from '@repo/vault';
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { Dialog, Field, inputClass } from '@/components/ui';
@@ -40,19 +48,16 @@ export function AddAccountDialog({
     issuer: d?.issuer ?? '',
     label: d?.label ?? '',
     secret: d?.secret ?? '',
-    algorithm: d?.algorithm ?? 'SHA1',
-    digits: d?.digits ?? 6,
-    period: d?.period ?? 30,
+    expiresAt: d?.expiresAt ?? '',
     folderId: d?.folderId ?? folderId ?? '',
   });
-  const [advanced, setAdvanced] = useState(
-    !!d && (d.algorithm !== 'SHA1' || d.digits !== 6 || d.period !== 30),
-  );
+  const [advanced, setAdvanced] = useState(!!d?.expiresAt);
   const [touchedKey, setTouchedKey] = useState(false);
 
   const secret = normalizeSecret(form.secret);
   const keyError = secretKeyError(secret);
-  const canSave = form.issuer.trim().length > 0 && !keyError && !busy;
+  const expiryInvalid = form.expiresAt !== '' && !isExpiryDate(form.expiresAt);
+  const canSave = form.issuer.trim().length > 0 && !keyError && !expiryInvalid && !busy;
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -91,17 +96,21 @@ export function AddAccountDialog({
     if (!canSave) return;
     run(async () => {
       try {
-        const data: AccountData = {
-          ...d,
-          type: d?.type ?? 'totp',
-          issuer: form.issuer.trim(),
-          label: form.label.trim(),
-          secret,
-          algorithm: form.algorithm as AccountData['algorithm'],
-          digits: Number(form.digits),
-          period: Number(form.period),
-          folderId: form.folderId || undefined,
-        };
+        // Typed keys always use the standard settings; edits keep what a QR import carried.
+        const data: AccountData = withExpiry(
+          {
+            ...d,
+            type: d?.type ?? 'totp',
+            issuer: form.issuer.trim(),
+            label: form.label.trim(),
+            secret,
+            algorithm: d?.algorithm ?? 'SHA1',
+            digits: d?.digits ?? 6,
+            period: d?.period ?? 30,
+            folderId: form.folderId || undefined,
+          },
+          form.expiresAt || undefined,
+        );
         await vault.save('account', data, editing?.id);
         onClose();
       } catch (err) {
@@ -231,31 +240,39 @@ export function AddAccountDialog({
             {advanced ? '▾' : '▸'} Advanced
           </button>
           {advanced && (
-            <div className="grid grid-cols-3 gap-2">
-              <Field label="Hash method">
-                <select value={form.algorithm} onChange={set('algorithm')} className={inputClass}>
-                  <option>SHA1</option>
-                  <option>SHA256</option>
-                  <option>SHA512</option>
-                </select>
-              </Field>
-              <Field label="Code length">
-                <select value={form.digits} onChange={set('digits')} className={inputClass}>
-                  <option>6</option>
-                  <option>7</option>
-                  <option>8</option>
-                </select>
-              </Field>
-              <Field label="New code every (seconds)">
-                <input
-                  type="number"
-                  min={10}
-                  max={120}
-                  value={form.period}
-                  onChange={set('period')}
+            <div className="space-y-2 rounded-xl bg-surface-muted p-3">
+              <Field label="Expires">
+                <select
+                  value={form.expiresAt ? 'date' : 'never'}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      expiresAt:
+                        e.target.value === 'never'
+                          ? ''
+                          : toExpiryDate(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)),
+                    })
+                  }
                   className={inputClass}
-                />
+                >
+                  <option value="never">Never</option>
+                  <option value="date">On a date…</option>
+                </select>
               </Field>
+              {form.expiresAt !== '' && (
+                <Field label="Expiry date">
+                  <input
+                    type="date"
+                    value={form.expiresAt}
+                    onChange={set('expiresAt')}
+                    className={inputClass}
+                    aria-invalid={expiryInvalid}
+                  />
+                </Field>
+              )}
+              <p className="text-xs text-muted">
+                Bloom hides the code after this date and reminds you a week before.
+              </p>
             </div>
           )}
           <Button disabled={!canSave}>{editing ? 'Save' : 'Add account'}</Button>

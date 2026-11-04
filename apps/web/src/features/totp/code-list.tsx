@@ -5,6 +5,7 @@ import { CountdownRing } from '@repo/ui/countdown-ring';
 import { useState } from 'react';
 import { useSettings } from '@/features/settings/settings';
 import type { AccountData, Decrypted, FolderData } from '@repo/vault';
+import { expiryStatus, formatExpiry } from '@repo/vault';
 import { copyCode } from './copy';
 import { useVault } from '@/features/vault/vault-context';
 import { hotpCode, useTotp } from './use-totp';
@@ -48,6 +49,9 @@ function CodeRow({ account, onEdit }: RowProps) {
   };
   const { clipboardClearSeconds } = useSettings();
   const [copied, setCopied] = useState(false);
+  const expiry = expiryStatus(a.expiresAt);
+  const [revealed, setRevealed] = useState(false);
+  const hidden = expiry === 'expired' && !revealed;
 
   const copy = async () => {
     await copyCode(code, clipboardClearSeconds);
@@ -56,15 +60,39 @@ function CodeRow({ account, onEdit }: RowProps) {
   };
 
   return (
-    <li className="flex items-center gap-3 rounded-xl bg-surface p-4 ring-1 ring-line">
+    <li
+      className={`flex items-center gap-3 rounded-xl bg-surface p-4 ring-1 ring-line ${
+        expiry === 'expired' ? 'opacity-60 grayscale' : ''
+      }`}
+    >
       <IssuerBadge issuer={a.issuer || a.label} />
-      <button className="min-w-0 flex-1 text-left" onClick={copy} title="Click to copy">
-        <p className="truncate text-sm text-muted">
-          {a.issuer} {a.label && <span className="text-muted">· {a.label}</span>}
+      <button
+        className="min-w-0 flex-1 text-left"
+        onClick={hidden ? () => setRevealed(true) : copy}
+        title={hidden ? 'Show the code anyway' : 'Click to copy'}
+      >
+        <p className="flex items-center gap-2 truncate text-sm text-muted">
+          <span className="truncate">
+            {a.issuer} {a.label && <span className="text-muted">· {a.label}</span>}
+          </span>
+          {expiry === 'expired' && (
+            <span className="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-fg ring-1 ring-line">
+              Expired
+            </span>
+          )}
+          {expiry === 'soon' && a.expiresAt && (
+            <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">
+              Expires soon · {formatExpiry(a.expiresAt)}
+            </span>
+          )}
         </p>
-        <p className="font-mono text-2xl tracking-widest">
-          {code.replace(/(\d{3})(?=\d)/g, '$1 ')}
-        </p>
+        {hidden ? (
+          <p className="py-1 text-sm font-medium text-accent">Show anyway</p>
+        ) : (
+          <p className="font-mono text-2xl tracking-widest">
+            {code.replace(/(\d{3})(?=\d)/g, '$1 ')}
+          </p>
+        )}
         {copied && <p className="text-xs text-success">Copied</p>}
       </button>
       {isHotp ? (
