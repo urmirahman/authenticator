@@ -19,7 +19,8 @@ export const site = {
   contactEmail: CONTACT_EMAIL,
   privacyEmail: CONTACT_EMAIL,
   securityEmail: CONTACT_EMAIL,
-  domain: 'https://bloomauth.app',
+  // Live web URL (Vercel). Change here if a custom domain is added later.
+  domain: 'https://bloomautenticator.vercel.app',
   effectiveDate: '4 November 2026',
   minimumAge: '16',
   repoUrl: 'https://github.com/urmirahman/authenticator',
