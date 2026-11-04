@@ -33,7 +33,7 @@ Use a long passphrase, enable auto-lock, keep the recovery kit offline, and revi
 
 ## Certifications
 We hold **no** security certifications (e.g. SOC 2, ISO 27001) and have **not yet** had an independent audit.
-${md('TODO: update after an audit / pen test')}
+When an independent review is completed, we will summarise the findings and fixes on this page.
 
 ## Reporting a vulnerability
 Please email ${md(site.securityEmail)} with steps to reproduce. We will acknowledge within 5 business days,

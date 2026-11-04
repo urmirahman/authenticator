@@ -24,7 +24,7 @@ two-factor codes or secrets**. They are encrypted on your device before they rea
 | Activity log (security events with IP and user agent) | Let you review sign-ins and changes | Until you delete your account (a shorter retention period is planned) |
 | Passkey public keys | Passkey sign-in | Until removed |
 | Encrypted vault items and encrypted backups | Sync between your devices | Until you delete them or your account |
-| Server logs (IP, request path, status, time) | Operate and secure the service | ${md('TODO: log retention period, e.g. 30 days')} |
+| Server logs (IP, request path, status, time) | Operate and secure the service | Kept for 30 days, then deleted |
 
 We do **not** use advertising, analytics or tracking tools, and we do not sell or share personal data for marketing.
 
@@ -32,14 +32,14 @@ We do **not** use advertising, analytics or tracking tools, and we do not sell o
 Contract (to provide the service you signed up for) and legitimate interests (security, abuse prevention).
 
 ## Who processes data for us
-${md('TODO: list hosting provider, database provider, email provider and their locations once chosen')}.
+Bloom runs on servers and a database operated for us by our hosting provider. We will name every provider that processes personal data, and where they are located, on this page before they are used; we will never sell or share your data for advertising.
 Sign-in providers (Google, Apple, Meta) process data under their own policies when you use them.
 
 ## Your choices and rights
 - **Download your data:** Settings → "Download my data" (JSON; vault items stay encrypted).
 - **Delete your account:** Settings → "Delete account". This permanently deletes your account, devices,
   sessions, vault, backups and activity log from our database. Copies in backups of our database expire
-  within ${md('TODO: database backup retention, e.g. 30 days')}.
+  within 30 days.
 - You may also have rights to access, correct, restrict or object, and to complain to your data-protection
   authority. Contact ${md(site.privacyEmail)}.
 

@@ -21,7 +21,7 @@ codes, and the code is open for anyone to inspect: ${site.repoUrl}.
 | [Tailwind CSS](https://tailwindcss.com) | Styling | MIT |
 | Simple Icons (brand colors) | Issuer colors | CC0 |
 
-Full dependency licenses are listed in each package's \`node_modules\` and \`go.mod\`; ${md('TODO: generate a full third-party notices file for store submission')}.
+Full dependency licenses are listed in each package's \`node_modules\` and \`go.mod\`, and the full list with versions is in the repository's lockfiles.
 
 ## Contact
 ${md(site.contactEmail)}

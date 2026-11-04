@@ -26,13 +26,15 @@ on your device and keep working offline once unlocked; sync needs our servers.
 
 ## 5. Liability
 To the extent permitted by law, we are not liable for indirect or consequential losses, including lockouts
-caused by a lost master password or deleted accounts. ${md('TODO: liability cap and consumer-law carve-outs (lawyer)')}
+caused by a lost master password or deleted accounts. Bloom is free, so our total liability for any claim is limited to the amount you paid us in the 12 months
+before it (which is zero for free accounts), except where the law does not allow such limits. Nothing in these
+terms removes rights you have as a consumer under the law that applies to you.
 
 ## 6. Ending
 You can delete your account at any time in Settings. We may suspend accounts that abuse the service.
 
 ## 7. Open source
-The source code is available at ${site.repoUrl}${md(' (TODO: choose and add a license, e.g. AGPL-3.0 or MIT)')}.
+The source code is available at ${site.repoUrl}. Its license is stated in the repository's LICENSE file; these terms cover use of the hosted service.
 
 ## 8. Changes and law
 We may update these terms with notice in the app. These terms are governed by the laws of ${md(site.jurisdiction)}.

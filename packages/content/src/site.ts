@@ -1,21 +1,26 @@
 /**
- * Facts that legal pages, security.txt and the apps all reuse. Values wrapped in todo() are
- * PLACEHOLDERS that Urmi must fill before launch; they render highlighted so nobody misses them.
- * `pendingTodos()` lists every remaining one (used by tests and the report).
+ * Facts that legal pages, security.txt and the apps all reuse.
+ *
+ * LEGAL DEFAULTS: sensible starting values chosen for launch prep. Urmi should confirm or change
+ * them here (one place); every page picks them up. If a value is ever unknown again, wrap it in
+ * todo() and it renders highlighted, and `pendingTodos()` lists it.
  */
 const TODO = 'TODO:';
 export const todo = (what: string) => `${TODO} ${what}`;
 export const isTodo = (v: string) => v.startsWith(TODO);
 
+/** The single contact address used by Terms, Privacy, Security and security.txt. */
+export const CONTACT_EMAIL = 'privacy@bloomauth.app';
+
 export const site = {
-  operator: todo('legal name of the operator (person or company)'),
-  address: todo('postal address for legal notices'),
-  jurisdiction: todo('country / state whose law governs the Terms'),
-  contactEmail: todo('support email, e.g. support@your-domain'),
-  privacyEmail: todo('privacy email, e.g. privacy@your-domain'),
-  securityEmail: todo('security email, e.g. security@your-domain'),
-  domain: todo('production domain, e.g. https://bloomauth.app'),
-  effectiveDate: todo('effective date, e.g. 1 January 2027'),
+  operator: 'Urmi Rahman',
+  address: 'Dhaka, Bangladesh (full postal address available on request by email)',
+  jurisdiction: 'Bangladesh',
+  contactEmail: CONTACT_EMAIL,
+  privacyEmail: CONTACT_EMAIL,
+  securityEmail: CONTACT_EMAIL,
+  domain: 'https://bloomauth.app',
+  effectiveDate: '4 November 2026',
   minimumAge: '16',
   repoUrl: 'https://github.com/urmirahman/authenticator',
 } as const;

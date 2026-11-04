@@ -29,7 +29,7 @@ Tests: `pnpm -F @authenticator/web test` (codec + WebAuthn JSON). With the API r
 ## Public pages and branding
 
 - `/` is the landing page (signed-in visitors go straight to `/codes`). Public pages live in `src/app/(public)/` and render text from `@repo/content`.
-- Legal text has highlighted **TODO** placeholders; fill them in `packages/content/src/site.ts` and the legal files.
+- Legal facts (operator, contact email, jurisdiction, domain, dates) live in one place: `packages/content/src/site.ts` (`CONTACT_EMAIL`, `site`). Unknown values can be wrapped in `todo()` and render highlighted.
 - Set `NEXT_PUBLIC_SITE_URL` (your real domain) so Open Graph, sitemap and `security.txt` use absolute URLs.
 - Colors come from `@repo/brand/tokens.css`: use `bg-surface`, `text-fg`, `text-muted`, `bg-accent`… not raw Tailwind colors.
 - Regenerate icons after changing the logo: `pnpm -F @repo/brand export-icons`.

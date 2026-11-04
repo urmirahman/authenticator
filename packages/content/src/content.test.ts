@@ -9,13 +9,13 @@ import {
 } from './index';
 
 describe('content', () => {
-  it('lists placeholders that must be filled before launch', () => {
-    // Fails loudly once someone fills them all — then delete this expectation.
-    expect(pendingTodos().length).toBeGreaterThan(0);
+  it('has no unfilled placeholders on any page', () => {
+    expect(pendingTodos()).toEqual([]);
+    const all = privacyPolicy() + termsOfService() + cookiePolicy() + securityTxt(new Date());
+    expect(all).not.toContain('TODO');
   });
 
-  it('highlights placeholders and names the storage the web app really uses', () => {
-    expect(privacyPolicy()).toContain('<mark>TODO:');
+  it('names the storage the web app really uses', () => {
     const cookies = cookiePolicy();
     for (const key of ['auth.access', 'auth.refresh', 'auth.deviceId', 'settings'])
       expect(cookies).toContain(key);
