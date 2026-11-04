@@ -8,7 +8,11 @@ export const metadata: Metadata = { title: 'Sign in' };
 
 export default function SignInPage() {
   return (
-    <main id="main" className="flex min-h-dvh flex-col items-center justify-center gap-6 p-6">
+    <main
+      id="main"
+      className="theme-meadow relative isolate flex min-h-dvh flex-col items-center justify-center gap-6 overflow-hidden p-6"
+    >
+      <div aria-hidden className="meadow-glow absolute inset-0 -z-10 blur-2xl" />
       <Link href="/" aria-label="Bloom home">
         <Logo size={36} />
       </Link>

@@ -77,15 +77,14 @@ body {
 }
 
 /*
- * "Meadow" landing theme (marketing + legal pages only, via .theme-meadow on the (public) layout).
- * Palette inspired by code-bloom.net: paper greens, deep ink, emerald accent, coral/lilac glows.
- * The app screens keep the rose Bloom tokens. Tailwind's --color-* resolve var() where they are
- * declared, so the scope re-declares both the --bloom-* values and the --color-* aliases.
+ * "Meadow" landing theme (public pages + sign-in, via .theme-meadow). Colour mood inspired by
+ * code-bloom.net: clean Bloom neutrals with multicolour accents (emerald, coral, lilac, lime,
+ * mint, rose). The app screens keep the rose Bloom tokens. Tailwind's --color-* resolve var()
+ * where they are declared, so the scope re-declares both the --bloom-* values and the aliases.
  */
 @theme {
-  --color-meadow-night: #0a0a0a;
-  --color-meadow-night-soft: #151917;
-  --color-meadow-glow: #00b386;
+  --color-meadow-ink: #17151a;
+  --color-meadow-emerald: #00a775;
   --color-meadow-mint: #8ff2cf;
   --color-meadow-lime: #c9f36b;
   --color-meadow-coral: #ff806b;
@@ -93,18 +92,34 @@ body {
 }
 
 .theme-meadow {
-  --bloom-bg: #f6f8f7;
+  /* Light: the original Bloom paper + white surfaces. */
+  --bloom-bg: #faf8f7;
   --bloom-surface: #ffffff;
-  --bloom-surface-muted: #edf2ef;
-  --bloom-border: #d8ded7;
-  --bloom-text: #0a0a0a;
-  --bloom-text-muted: #5b625f; /* 6.0:1 on paper (theirs, #68706d, is 4.9:1) */
-  --bloom-accent: #006b4d; /* green-dark: 6.9:1 on white; #00a775 is only 3.1:1 */
+  --bloom-surface-muted: #f3f0ee;
+  --bloom-border: #e7e2df;
+  --bloom-text: #17151a;
+  --bloom-text-muted: #5f5955; /* 6.5:1 on #faf8f7 */
+  --bloom-accent: #006b4d; /* deep emerald, 6.5:1 on white */
   --bloom-accent-text: #ffffff;
-  --bloom-accent-soft: #c9f4e2;
-  --meadow-glow-1: #00b38629;
-  --meadow-glow-2: #ff806b2e;
-  --meadow-glow-3: #e8d8ff40;
+  --bloom-accent-soft: #dcf7eb;
+  /* Multicolour chips: soft background + AA text colour for each hue. */
+  --meadow-emerald-bg: #dcf7eb;
+  --meadow-emerald-fg: #006b4d;
+  --meadow-coral-bg: #ffe5db;
+  --meadow-coral-fg: #a53a24;
+  --meadow-lilac-bg: #efe6ff;
+  --meadow-lilac-fg: #5b3aa8;
+  --meadow-lime-bg: #eefbc8;
+  --meadow-lime-fg: #45631a;
+  --meadow-mint-bg: #d6faf0;
+  --meadow-mint-fg: #0f6b5c;
+  --meadow-rose-bg: #ffe4ea;
+  --meadow-rose-fg: #b9184f;
+  --meadow-glow-1: #00b38633;
+  --meadow-glow-2: #ff806b38;
+  --meadow-glow-3: #c4a8ff40;
+  --meadow-glow-4: #c9f36b4d;
+  --meadow-band: linear-gradient(120deg, #dcf7eb 0%, #eefbc8 28%, #ffe5db 58%, #efe6ff 100%);
 
   --color-bg: var(--bloom-bg);
   --color-surface: var(--bloom-surface);
@@ -120,35 +135,88 @@ body {
   color: var(--bloom-text);
 }
 
+/* Dark: softer than before, close to the Bloom dark plum-charcoal, with the same multicolour. */
 .dark .theme-meadow {
-  --bloom-bg: #101814;
-  --bloom-surface: #1c2922;
-  --bloom-surface-muted: #151e19;
-  --bloom-border: #35463c;
-  --bloom-text: #edf5ef;
-  --bloom-text-muted: #b6c4ba;
-  --bloom-accent: #26c99b;
-  --bloom-accent-text: #09120e;
-  --bloom-accent-soft: #254b3d;
-  --meadow-glow-1: #26c99b2e;
-  --meadow-glow-2: #ff806b1f;
-  --meadow-glow-3: #e8d8ff14;
+  --bloom-bg: #1c1820;
+  --bloom-surface: #26212b;
+  --bloom-surface-muted: #302a36;
+  --bloom-border: #453d4c;
+  --bloom-text: #f7f2f5;
+  --bloom-text-muted: #c4bac3; /* 9.3:1 on #1c1820 */
+  --bloom-accent: #3fd8a8; /* 9.5:1 on #1c1820 */
+  --bloom-accent-text: #12100f;
+  --bloom-accent-soft: #1f3b33;
+  --meadow-emerald-bg: #1f3b33;
+  --meadow-emerald-fg: #6fe6bf;
+  --meadow-coral-bg: #42282a;
+  --meadow-coral-fg: #ffab98;
+  --meadow-lilac-bg: #342b48;
+  --meadow-lilac-fg: #d4c2ff;
+  --meadow-lime-bg: #33391f;
+  --meadow-lime-fg: #d6f28c;
+  --meadow-mint-bg: #1d3a38;
+  --meadow-mint-fg: #a3f3dd;
+  --meadow-rose-bg: #42232f;
+  --meadow-rose-fg: #ff9fb6;
+  --meadow-glow-1: #3fd8a826;
+  --meadow-glow-2: #ff806b24;
+  --meadow-glow-3: #a78bfa2e;
+  --meadow-glow-4: #c9f36b14;
+  --meadow-band: linear-gradient(120deg, #1f3b33 0%, #2f3522 28%, #42282a 60%, #342b48 100%);
 }
 
-/* Soft hero glow: emerald + coral + lilac blobs (static colours, gentle drift). */
+.meadow-chip-emerald {
+  background: var(--meadow-emerald-bg);
+  color: var(--meadow-emerald-fg);
+}
+.meadow-chip-coral {
+  background: var(--meadow-coral-bg);
+  color: var(--meadow-coral-fg);
+}
+.meadow-chip-lilac {
+  background: var(--meadow-lilac-bg);
+  color: var(--meadow-lilac-fg);
+}
+.meadow-chip-lime {
+  background: var(--meadow-lime-bg);
+  color: var(--meadow-lime-fg);
+}
+.meadow-chip-mint {
+  background: var(--meadow-mint-bg);
+  color: var(--meadow-mint-fg);
+}
+.meadow-chip-rose {
+  background: var(--meadow-rose-bg);
+  color: var(--meadow-rose-fg);
+}
+
+/* Multicolour text accent (headline word). Solid fallback colour keeps contrast if unsupported. */
+.meadow-text-gradient {
+  color: var(--bloom-accent);
+  background: linear-gradient(90deg, #00a775, #e0663f 55%, #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.dark .meadow-text-gradient {
+  background: linear-gradient(90deg, #3fd8a8, #ff9a85 55%, #b9a2ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* Soft hero glow: emerald, coral, lilac and lime blobs with a gentle drift. */
 .meadow-glow {
   background:
-    radial-gradient(circle at 72% 38%, var(--meadow-glow-1), transparent 45%),
-    radial-gradient(circle at 28% 70%, var(--meadow-glow-2), transparent 42%),
-    radial-gradient(circle at 55% 85%, var(--meadow-glow-3), transparent 40%);
+    radial-gradient(circle at 72% 32%, var(--meadow-glow-1), transparent 45%),
+    radial-gradient(circle at 25% 68%, var(--meadow-glow-2), transparent 42%),
+    radial-gradient(circle at 60% 88%, var(--meadow-glow-3), transparent 42%),
+    radial-gradient(circle at 20% 20%, var(--meadow-glow-4), transparent 38%);
   animation: meadow-drift 14s ease-in-out infinite alternate;
 }
-/* Night band (CTA) like their dark hero: near-black with an emerald glow. */
-.meadow-night {
-  background:
-    radial-gradient(circle at 76% 30%, #00b38633, transparent 38%),
-    radial-gradient(circle at 18% 95%, #ffffff0d, transparent 30%), #0a0a0a;
-  color: #edf5ef;
+/* Multicolour call-to-action band. */
+.meadow-band {
+  background: var(--meadow-band);
+  color: var(--bloom-text);
 }
 @keyframes meadow-drift {
   from {

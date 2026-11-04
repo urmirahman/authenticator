@@ -37,6 +37,15 @@ const FEATURES = [
   },
 ];
 
+const CHIPS = [
+  'meadow-chip-emerald',
+  'meadow-chip-coral',
+  'meadow-chip-lilac',
+  'meadow-chip-lime',
+  'meadow-chip-mint',
+  'meadow-chip-rose',
+];
+
 const STEPS = [
   {
     n: 1,
@@ -62,11 +71,11 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-4 pt-16 pb-20 sm:px-6 md:grid-cols-[1.2fr_1fr] md:pt-24">
         <div>
-          <p className="mb-4 inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
+          <p className="meadow-chip-coral mb-4 inline-block rounded-full px-3 py-1 text-xs font-semibold">
             Two-factor authentication, done gently
           </p>
           <h1 className="text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
-            Your 2FA codes, <span className="text-accent">in bloom</span> on every device.
+            Your 2FA codes, <span className="meadow-text-gradient">in bloom</span> on every device.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted">{brand.description}</p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -78,7 +87,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="#how"
-              className="rounded-full px-5 py-3 font-semibold ring-1 ring-[#b8c3ba] dark:ring-[#52675b] hover:bg-surface-muted"
+              className="rounded-full px-5 py-3 font-semibold ring-1 ring-line hover:bg-surface-muted"
             >
               How it works
             </Link>
@@ -115,9 +124,12 @@ export default function LandingPage() {
           Everything you need, nothing you don&apos;t
         </h2>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <li key={f.title} className="rounded-lg bg-surface p-5 ring-1 ring-line">
-              <span aria-hidden className="text-2xl">
+          {FEATURES.map((f, i) => (
+            <li key={f.title} className="rounded-xl bg-surface p-5 ring-1 ring-line">
+              <span
+                aria-hidden
+                className={`${CHIPS[i % CHIPS.length]} flex size-11 items-center justify-center rounded-2xl text-xl`}
+              >
                 {f.icon}
               </span>
               <h3 className="mt-3 font-semibold">{f.title}</h3>
@@ -142,8 +154,10 @@ export default function LandingPage() {
         </p>
         <ol className="mt-8 grid gap-4 md:grid-cols-3">
           {STEPS.map((s) => (
-            <li key={s.n} className="rounded-lg bg-surface p-5 ring-1 ring-line">
-              <span className="flex size-8 items-center justify-center rounded-full bg-accent-soft font-bold text-accent">
+            <li key={s.n} className="rounded-xl bg-surface p-5 ring-1 ring-line">
+              <span
+                className={`${['meadow-chip-emerald', 'meadow-chip-lilac', 'meadow-chip-coral'][s.n - 1]} flex size-8 items-center justify-center rounded-full font-bold`}
+              >
                 {s.n}
               </span>
               <h3 className="mt-3 font-semibold">{s.title}</h3>
@@ -151,10 +165,10 @@ export default function LandingPage() {
             </li>
           ))}
         </ol>
-        <div className="mt-6 rounded-lg bg-accent-soft p-5 text-sm">
+        <div className="meadow-chip-lime mt-6 rounded-xl p-5 text-sm">
           <strong>The honest part:</strong> because we can&apos;t read your vault, we can&apos;t
           recover it either. Keep your master password safe and print the recovery kit.{' '}
-          <Link href="/security" className="font-semibold text-accent underline">
+          <Link href="/security" className="font-semibold underline">
             Read the full security model →
           </Link>
         </div>
@@ -189,14 +203,14 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section className="mx-auto mt-24 max-w-5xl px-4 sm:px-6">
-        <div className="meadow-night flex flex-col items-center gap-4 rounded-[36px] px-6 py-14 text-center">
+        <div className="meadow-band flex flex-col items-center gap-4 rounded-[36px] px-6 py-14 text-center ring-1 ring-line">
           <h2 className="text-3xl font-bold">Let your codes bloom.</h2>
-          <p className="max-w-lg text-[#b6c4ba]">
+          <p className="max-w-lg text-muted">
             Free while in beta. Set up in a minute; import from Google Authenticator in two.
           </p>
           <Link
             href="/sign-in"
-            className="rounded-full bg-meadow-lime px-6 py-3 font-semibold text-meadow-night shadow-[5px_6px_0_var(--color-meadow-coral)] transition-transform hover:-translate-y-0.5 focus-visible:outline-meadow-lime motion-reduce:transition-none"
+            className="rounded-full bg-meadow-lime px-6 py-3 font-semibold text-meadow-ink ring-1 ring-meadow-ink/10 shadow-[5px_6px_0_var(--color-meadow-coral)] transition-transform hover:-translate-y-0.5 motion-reduce:transition-none"
           >
             Create your vault
           </Link>
