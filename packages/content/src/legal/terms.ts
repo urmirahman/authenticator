@@ -33,8 +33,8 @@ terms removes rights you have as a consumer under the law that applies to you.
 ## 6. Ending
 You can delete your account at any time in Settings. We may suspend accounts that abuse the service.
 
-## 7. Open source
-Bloom is built with open-source software, listed on the About page. Each component is used under its own license; these terms cover use of the hosted service.
+## 7. Free to use
+Bloom is free to use. There are no paid plans or in-app purchases.
 
 ## 8. Changes and law
 We may update these terms with notice in the app. These terms are governed by the laws of ${md(site.jurisdiction)}.

@@ -11,8 +11,8 @@ codes.
 ## Availability
 Bloom is available now on the web. The Android app is under review on Google Play and is coming soon.
 
-## Built with open source
-Built with [Next.js](https://nextjs.org), [Expo](https://expo.dev), [Go](https://go.dev) and [PostgreSQL](https://www.postgresql.org), plus other open-source libraries.
+## Free to use
+Bloom is free to use. There are no ads and no paid plans.
 
 ## Contact
 ${md(site.contactEmail)}

@@ -25,7 +25,7 @@ export const site = {
   minimumAge: '16',
   developerUrl: 'https://urmirahman.vercel.app',
   company: 'Codebloom Limited',
-  companyUrl: 'https://www.code-bloom.net',
+  companyUrl: 'https://code-bloom.net',
 } as const;
 
 export function pendingTodos(): string[] {
