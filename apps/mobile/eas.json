@@ -37,6 +37,12 @@
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "309065581096-elv69hjf8d80itq42p49mt5rlqe592d6.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "309065581096-eaaps71lgmv78bf03b7p6qh0t9ldmcmm.apps.googleusercontent.com"
       }
+    },
+    "simulator": {
+      "extends": "preview",
+      "ios": {
+        "simulator": true
+      }
     }
   },
   "submit": {
