@@ -23,7 +23,9 @@ export const site = {
   domain: 'https://bloomautenticator.vercel.app',
   effectiveDate: '4 November 2026',
   minimumAge: '16',
-  repoUrl: 'https://github.com/urmirahman/authenticator',
+  developerUrl: 'https://urmirahman.vercel.app',
+  company: 'Codebloom Limited',
+  companyUrl: 'https://www.code-bloom.net',
 } as const;
 
 export function pendingTodos(): string[] {

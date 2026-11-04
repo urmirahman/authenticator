@@ -106,5 +106,5 @@ export const brand = {
   slug: 'bloom',
   tagline: 'Two-factor codes that bloom on your devices — encrypted end to end.',
   description:
-    'Bloom Authenticator keeps your 2FA codes in an end-to-end encrypted vault that syncs across web, iPhone and Android. Only you can unlock it.',
+    'Bloom Authenticator keeps your 2FA codes in an end-to-end encrypted vault that syncs across web and Android. Only you can unlock it.',
 } as const;

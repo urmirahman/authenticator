@@ -34,7 +34,7 @@ terms removes rights you have as a consumer under the law that applies to you.
 You can delete your account at any time in Settings. We may suspend accounts that abuse the service.
 
 ## 7. Open source
-The source code is available at ${site.repoUrl}. Its license is stated in the repository's LICENSE file; these terms cover use of the hosted service.
+Bloom is built with open-source software, listed on the About page. Each component is used under its own license; these terms cover use of the hosted service.
 
 ## 8. Changes and law
 We may update these terms with notice in the app. These terms are governed by the laws of ${md(site.jurisdiction)}.

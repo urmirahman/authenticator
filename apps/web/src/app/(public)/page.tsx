@@ -13,7 +13,7 @@ const FEATURES = [
   {
     icon: '🔄',
     title: 'Sync everywhere',
-    text: 'Web, iPhone and Android stay in sync. Lose a phone, keep your codes.',
+    text: 'Web and Android stay in sync. Lose a phone, keep your codes.',
   },
   {
     icon: '📷',
