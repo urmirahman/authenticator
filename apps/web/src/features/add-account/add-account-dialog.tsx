@@ -232,21 +232,21 @@ export function AddAccountDialog({
           </button>
           {advanced && (
             <div className="grid grid-cols-3 gap-2">
-              <Field label="Algorithm">
+              <Field label="Hash method">
                 <select value={form.algorithm} onChange={set('algorithm')} className={inputClass}>
                   <option>SHA1</option>
                   <option>SHA256</option>
                   <option>SHA512</option>
                 </select>
               </Field>
-              <Field label="Digits">
+              <Field label="Code length">
                 <select value={form.digits} onChange={set('digits')} className={inputClass}>
                   <option>6</option>
                   <option>7</option>
                   <option>8</option>
                 </select>
               </Field>
-              <Field label="Period (s)">
+              <Field label="New code every (seconds)">
                 <input
                   type="number"
                   min={10}

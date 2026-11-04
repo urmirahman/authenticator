@@ -14,7 +14,7 @@ src/
     auth/              sign-in card, passkey sign-in / registration
     vault/             vault-codec (pure crypto), vault-context (store + sync), unlock screen, main screen
     totp/              live code row, shared 1-second clock, copy + clipboard clear
-    add-account/       manual / QR image / paste-import dialog
+    add-account/       Scan QR / Enter key dialog (import lives in Settings)
     backup/            backup-codec (backup password → Argon2id → XChaCha20) + backup screen
     transfer/          Google-style migration QR codes (warning + reveal)
     devices/ activity/ settings/   settings also has change master password + passkey rename
