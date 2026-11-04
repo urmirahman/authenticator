@@ -60,3 +60,8 @@
     - Web renders it as pages (Markdown via `marked`); mobile renders the FAQ natively and opens legal pages on the web (`EXPO_PUBLIC_WEB_URL`) so there is one published version.
     - Unknown facts (operator, address, emails, domain, jurisdiction, retention…) use `todo()`, which shows highlighted on the page; `pendingTodos()` lists them and a test keeps the list visible. The texts are drafts, not legal advice; a lawyer should review before launch.
     - No cookie banner: Bloom sets no cookies and uses no tracking; the cookie policy describes the browser storage it does use.
+
+38. **New logo: multicolour infinity loop with a padlock.**
+    - _Why:_ the owner wanted a mark in the spirit of code-bloom.net's infinity logo. We drew an original one (a Bernoulli lemniscate path, our own padlock) rather than copying their artwork, which is their trademark.
+    - Infinity = codes that keep renewing; the padlock = end-to-end encryption. The gradient ties the rose/violet app palette to the multicolour landing theme.
+    - The padlock is masked out of the loop so it stays legible at 16-32 px; a light-lock variant exists for dark backgrounds (mobile splash, dark screens), and the web React mark takes the lock colour from the page text colour.

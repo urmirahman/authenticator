@@ -6,7 +6,10 @@
 **Idea:** a six-petal flower around a countdown ring. Petals = your accounts opening up; the ring = the
 30-second TOTP timer; the white core reads as a lock/keyhole.
 
-## Logo files (`packages/brand/assets`)
+## Logo
+
+**Current mark (Nov 2026):** a flowing infinity loop with a multicolour gradient (emerald `#00a775` → lime `#7fcf5a` → amber `#f5b94a` → coral `#ff806b` → rose `#f04473` → violet `#8b5cf6`) and a padlock at the crossing, cut out of the loop with a clear gap so it reads at 16 px. Variants: `logo-mark.svg` (dark lock, light backgrounds), `logo-mark-dark.svg` (light lock), `logo-mono.svg` (`currentColor`), `app-icon.svg`, `adaptive-foreground(-dark).svg`, `wordmark.svg`. The older petal mark below is retired.
+files (`packages/brand/assets`)
 
 | File                      | Use                                                           |
 | ------------------------- | ------------------------------------------------------------- |
@@ -57,20 +60,30 @@ no "military-grade", no certifications we don't hold). Short sentences, second p
 - **Motion:** 260 ms fade-and-rise on first appearance, soft pulse for skeletons; none of it when Reduce Motion is on. Haptics: selection tick on taps, success on copy/save, warning on a wrong password.
 - **Microcopy:** short, kind, human ("Nothing blooming yet", "Welcome back", "Opening your vault…"). Never blame the user; say what to do next.
 
-## Landing "Meadow" palette (marketing and legal pages)
+## Landing "Meadow" palette (public pages and sign-in)
 
-Inspired by the colour mood of code-bloom.net (colours only, no logo, copy or layout). Scoped with `.theme-meadow` on the `(public)` layout in `apps/web/src/app/globals.css`; the app screens keep the rose tokens.
+Colour mood inspired by code-bloom.net (colours only, no logo, copy or layout). Clean Bloom neutrals with multicolour accents. Scoped with `.theme-meadow` (`apps/web/src/app/globals.css`) on the `(public)` layout and the sign-in page; app screens keep the rose tokens.
 
-| Role               | Light     | Dark      |
-| ------------------ | --------- | --------- |
-| Background (paper) | `#f6f8f7` | `#101814` |
-| Surface            | `#ffffff` | `#1c2922` |
-| Surface muted      | `#edf2ef` | `#151e19` |
-| Border             | `#d8ded7` | `#35463c` |
-| Text               | `#0a0a0a` | `#edf5ef` |
-| Muted text         | `#5b625f` | `#b6c4ba` |
-| Accent (buttons)   | `#006b4d` | `#26c99b` |
-| Text on accent     | `#ffffff` | `#09120e` |
-| Accent soft        | `#c9f4e2` | `#254b3d` |
+| Role             | Light     | Dark      |
+| ---------------- | --------- | --------- |
+| Background       | `#faf8f7` | `#1c1820` |
+| Surface          | `#ffffff` | `#26212b` |
+| Surface muted    | `#f3f0ee` | `#302a36` |
+| Border           | `#e7e2df` | `#453d4c` |
+| Text             | `#17151a` | `#f7f2f5` |
+| Muted text       | `#5f5955` | `#c4bac3` |
+| Accent (buttons) | `#006b4d` | `#3fd8a8` |
+| Text on accent   | `#ffffff` | `#12100f` |
 
-Extras: night band `#0a0a0a` with emerald glow `#00b386`, lime CTA `#c9f36b` with a coral `#ff806b` offset shadow, lilac `#e8d8ff` and coral blobs in the hero glow. The glow drifts slowly and stops under Reduce Motion.
+Multicolour chips (background / text, all ≥ 5.3:1):
+
+| Hue     | Light                 | Dark                  |
+| ------- | --------------------- | --------------------- |
+| Emerald | `#dcf7eb` / `#006b4d` | `#1f3b33` / `#6fe6bf` |
+| Coral   | `#ffe5db` / `#a53a24` | `#42282a` / `#ffab98` |
+| Lilac   | `#efe6ff` / `#5b3aa8` | `#342b48` / `#d4c2ff` |
+| Lime    | `#eefbc8` / `#45631a` | `#33391f` / `#d6f28c` |
+| Mint    | `#d6faf0` / `#0f6b5c` | `#1d3a38` / `#a3f3dd` |
+| Rose    | `#ffe4ea` / `#b9184f` | `#42232f` / `#ff9fb6` |
+
+Hero glow: emerald `#00b386`, coral `#ff806b`, lilac `#c4a8ff`, lime `#c9f36b` blobs (static under Reduce Motion). CTA band: emerald → lime → coral → lilac soft gradient; lime pill button `#c9f36b` with ink text and a coral offset shadow.
