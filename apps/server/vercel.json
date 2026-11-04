@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "",
-  "buildCommand": "",
+  "installCommand": "echo \"Go function: no install step\"",
+  "buildCommand": "echo \"Go function: Vercel builds api/index.go itself\"",
   "outputDirectory": "public",
   "regions": ["sin1"],
   "functions": {
