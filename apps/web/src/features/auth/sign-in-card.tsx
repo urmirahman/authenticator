@@ -1,6 +1,6 @@
 'use client';
 
-import { friendlyPasskeyError, type FriendlyError } from '@repo/vault';
+import { friendlyPasskeyError, type FriendlyError } from '@repo/vault/passkey-errors';
 
 import type { OAuthProvider } from '@repo/types';
 import { Button } from '@repo/ui/button';

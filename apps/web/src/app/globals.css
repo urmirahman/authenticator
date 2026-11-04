@@ -231,3 +231,16 @@ body {
     animation: none;
   }
 }
+
+/* Dialog entrance (used via motion-safe: classes, so Reduce Motion skips it). */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}

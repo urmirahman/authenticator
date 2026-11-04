@@ -1,7 +1,7 @@
 'use client';
 
 import type { Passkey } from '@repo/types';
-import { friendlyPasskeyError } from '@repo/vault';
+import { friendlyPasskeyError } from '@repo/vault/passkey-errors';
 import { Button } from '@repo/ui/button';
 import { useEffect, useState } from 'react';
 import { Field, inputClass, Notice, PageTitle } from '@/components/ui';
