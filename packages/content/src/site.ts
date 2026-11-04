@@ -10,7 +10,7 @@ export const todo = (what: string) => `${TODO} ${what}`;
 export const isTodo = (v: string) => v.startsWith(TODO);
 
 /** The single contact address used by Terms, Privacy, Security and security.txt. */
-export const CONTACT_EMAIL = 'info@code-bloom.net';
+export const CONTACT_EMAIL = 'codebloomsupport@gmail.com';
 
 export const site = {
   operator: 'Urmi Rahman',
