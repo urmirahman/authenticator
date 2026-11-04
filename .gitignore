@@ -25,3 +25,6 @@ apps/server/bin
 apps/server/tmp
 *.test
 *.out
+
+# Local agent notes
+apps/web/AGENTS.md
