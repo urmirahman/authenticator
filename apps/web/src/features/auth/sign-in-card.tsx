@@ -1,11 +1,13 @@
 'use client';
 
+import { friendlyPasskeyError, type FriendlyError } from '@repo/vault';
+
 import type { OAuthProvider } from '@repo/types';
 import { Button } from '@repo/ui/button';
 import { Card } from '@repo/ui/card';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import { Field, inputClass } from '@/components/ui';
+import { Field, inputClass, Notice } from '@/components/ui';
 import { api, completeSignIn, DEV_AUTH } from '@/lib/api';
 import { signInWithPasskey } from './passkey';
 
@@ -22,6 +24,7 @@ const PROVIDERS: Array<{ id: OAuthProvider; label: string }> = [
 export function SignInCard() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<FriendlyError | null>(null);
 
   const startOAuth = (provider: OAuthProvider) => {
     window.location.href = api.auth.oauthStartUrl(
@@ -30,10 +33,12 @@ export function SignInCard() {
     );
   };
 
-  const passkey = () =>
+  const passkey = () => {
+    setNotice(null);
     signInWithPasskey()
       .then(() => router.replace('/vault'))
-      .catch((e: Error) => setError(e.message));
+      .catch((e: unknown) => setNotice(friendlyPasskeyError(e, 'signin')));
+  };
 
   const devLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -71,6 +76,11 @@ export function SignInCard() {
           </Field>
           <Button variant="ghost">Dev sign in</Button>
         </form>
+      )}
+      {notice && (
+        <Notice tone={notice.tone} onDismiss={() => setNotice(null)}>
+          {notice.message}
+        </Notice>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}
     </Card>

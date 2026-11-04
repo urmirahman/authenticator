@@ -84,3 +84,42 @@ export function PageTitle({ children, action }: { children: ReactNode; action?: 
     </div>
   );
 }
+
+/** Cozy inline notice (instead of alerts): soft tinted card, announced politely to screen readers. */
+export function Notice({
+  tone = 'info',
+  children,
+  onDismiss,
+}: {
+  tone?: 'info' | 'success' | 'error';
+  children: ReactNode;
+  onDismiss?: () => void;
+}) {
+  const styles = {
+    info: 'bg-accent-soft text-fg ring-accent/20',
+    success: 'bg-accent-soft text-fg ring-success/30',
+    error: 'bg-danger/10 text-fg ring-danger/30',
+  }[tone];
+  const icon = { info: '🌱', success: '✿', error: '⚠︎' }[tone];
+  return (
+    <div
+      role={tone === 'error' ? 'alert' : 'status'}
+      className={`flex items-start gap-3 rounded-xl px-4 py-3 text-sm ring-1 ${styles}`}
+    >
+      <span aria-hidden className="mt-px">
+        {icon}
+      </span>
+      <p className="flex-1 leading-relaxed">{children}</p>
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="-mr-1 rounded-md px-1 text-muted hover:text-fg"
+        >
+          ×
+        </button>
+      )}
+    </div>
+  );
+}

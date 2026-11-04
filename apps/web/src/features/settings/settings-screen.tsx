@@ -1,9 +1,10 @@
 'use client';
 
 import type { Passkey } from '@repo/types';
+import { friendlyPasskeyError } from '@repo/vault';
 import { Button } from '@repo/ui/button';
 import { useEffect, useState } from 'react';
-import { Field, inputClass, PageTitle } from '@/components/ui';
+import { Field, inputClass, Notice, PageTitle } from '@/components/ui';
 import { passkeysSupported, registerPasskey } from '@/features/auth/passkey';
 import { api } from '@/lib/api';
 import { ChangePasswordForm } from './change-password';
@@ -22,7 +23,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function SettingsScreen() {
   const s = useSettings();
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ tone: 'info' | 'success' | 'error'; text: string } | null>(null);
 
   const loadPasskeys = () => api.passkeys.list().then(setPasskeys, () => undefined);
   useEffect(() => {
@@ -37,10 +38,11 @@ export function SettingsScreen() {
     if (!name) return;
     try {
       await registerPasskey(name);
-      setMsg('Passkey added');
+      setMsg({ tone: 'success', text: `Passkey “${name}” added. You can now sign in with it.` });
       loadPasskeys();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Failed');
+      const f = friendlyPasskeyError(e, 'register');
+      setMsg({ tone: f.tone, text: f.message });
     }
   };
 
@@ -145,7 +147,11 @@ export function SettingsScreen() {
             Add a passkey
           </Button>
         )}
-        {msg && <p className="text-sm">{msg}</p>}
+        {msg && (
+          <Notice tone={msg.tone} onDismiss={() => setMsg(null)}>
+            {msg.text}
+          </Notice>
+        )}
       </Section>
 
       <Section title="Your data">
