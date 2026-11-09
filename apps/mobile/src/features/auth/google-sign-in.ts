@@ -23,7 +23,9 @@ let configured = false;
 function configure() {
   if (configured) return;
   GoogleSignin.configure({
-    iosClientId: IOS || undefined,
+    // v17 has no androidClientId: on Android the app is identified by package name + SHA-1
+    // (registered in Google Cloud), and webClientId sets the id_token audience.
+    iosClientId: Platform.OS === 'ios' ? IOS || undefined : undefined,
     webClientId: WEB || undefined,
     scopes: ['email', 'profile'],
   });

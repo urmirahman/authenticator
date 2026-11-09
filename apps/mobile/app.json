@@ -1,0 +1,85 @@
+{
+  "expo": {
+    "name": "Bloom",
+    "slug": "authenticator",
+    "owner": "rahmanurmi",
+    "scheme": ["authenticator", "exp+authenticator"],
+    "version": "0.1.1",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "dev.urmirahman.authenticator",
+      "buildNumber": "2",
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleDisplayName": "Bloom"
+      },
+      "usesAppleSignIn": true,
+      "associatedDomains": ["webcredentials:auth.example.com"]
+    },
+    "android": {
+      "package": "dev.urmirahman.authenticator",
+      "versionCode": 3,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "backgroundColor": "#faf8f7",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#1c1820"
+          }
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Bloom to use Face ID to unlock your vault."
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.309065581096-elv69hjf8d80itq42p49mt5rlqe592d6"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Bloom uses the camera only to scan the QR code a website shows when you turn on 2FA.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Bloom reads a QR code from the screenshot you choose. Nothing is uploaded.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "webUrl": "http://localhost:3001",
+      "apiUrl": "http://localhost:8787",
+      "eas": {
+        "projectId": "9137787b-f54d-409d-8c4e-42f7f574bdb4"
+      }
+    }
+  }
+}

@@ -51,6 +51,7 @@ interface VaultState {
   lastSyncedAt: number | null;
   error: string | null;
   load(): Promise<void>;
+  reset(): void;
   setup(password: string): Promise<void>;
   unlock(password: string): Promise<void>;
   /** True if the password opens the vault envelope (doesn't change state). */
@@ -82,7 +83,22 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const vault = useRef<Vault | null>(null);
   const key = useRef<Uint8Array | null>(null);
   const cursor = useRef('');
+  const generation = useRef(0);
   const [biometric, setBiometricState] = useState({ available: false, enabled: false });
+
+  const reset = useCallback(() => {
+    generation.current += 1;
+    key.current?.fill(0);
+    key.current = null;
+    vault.current = null;
+    cursor.current = '';
+    setItems(new Map());
+    setSyncing(false);
+    setLastSyncedAt(null);
+    setError(null);
+    setBiometricState({ available: false, enabled: false });
+    setStatus('loading');
+  }, []);
 
   const refreshBiometric = useCallback(async () => {
     const v = vault.current;
@@ -117,7 +133,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const load = useCallback(async () => {
+    const currentGeneration = generation.current;
     const vaults = await api.vaults.list();
+    if (generation.current !== currentGeneration) return;
     vault.current = vaults[0] ?? null;
     setStatus(vault.current ? (key.current ? 'unlocked' : 'locked') : 'needs-setup');
     await refreshBiometric();
@@ -126,10 +144,12 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const sync = useCallback(async () => {
     const v = vault.current;
     if (!v || !key.current) return;
+    const currentGeneration = generation.current;
     setSyncing(true);
     try {
       for (;;) {
         const page = await api.sync.pull(v.id, cursor.current);
+        if (generation.current !== currentGeneration) return;
         apply(page.items);
         cursor.current = page.cursor;
         if (!page.hasMore) break;
@@ -137,9 +157,10 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       setError(null);
       setLastSyncedAt(Date.now());
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Sync failed');
+      if (generation.current === currentGeneration)
+        setError(e instanceof Error ? e.message : 'Sync failed');
     } finally {
-      setSyncing(false);
+      if (generation.current === currentGeneration) setSyncing(false);
     }
   }, [apply]);
 
@@ -290,6 +311,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       ),
       folders: sortFolders(all.filter((i) => i.kind === 'folder') as Decrypted<FolderData>[]),
       load,
+      reset,
       setup,
       unlock,
       verifyPassword,
@@ -309,6 +331,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     lastSyncedAt,
     error,
     load,
+    reset,
     setup,
     unlock,
     verifyPassword,

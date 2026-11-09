@@ -1,11 +1,12 @@
 import type { Device, SignInMethods, User } from '@repo/types';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Prompt } from '@/components/prompt';
 import { useColors } from '@/components/theme';
 import {
   Avatar,
+  Button,
   Card,
   FadeIn,
   Group,
@@ -38,6 +39,7 @@ export function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -65,132 +67,152 @@ export function ProfileScreen() {
     setRefreshing(false);
   };
 
-  const confirmSignOut = () =>
-    Alert.alert('Sign out of Bloom?', 'Your codes stay safe in your encrypted vault.', [
-      { text: 'Stay', style: 'cancel' },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: async () => {
-          vault.lock();
-          await clearBiometricKey(); // a new sign-in must opt in again
-          await signOutGoogle();
-          await signOut();
-          router.replace('/sign-in');
-        },
-      },
-    ]);
+  const confirmSignOut = () => setSignOutOpen(true);
+  const doSignOut = async () => {
+    setSignOutOpen(false);
+    vault.lock();
+    await clearBiometricKey(); // a new sign-in must opt in again
+    await signOutGoogle();
+    await signOut();
+    router.replace('/sign-in');
+  };
 
   const name = user?.displayName || user?.email.split('@')[0] || '';
   const linked = (id: string) => methods?.providers.find((p) => p.provider === id);
 
   return (
-    <Screen
-      title="Profile"
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.accent} />
-      }
-    >
-      {!user ? (
-        <View style={s.hero}>
-          <Skeleton height={88} style={{ width: 88, borderRadius: 44 }} />
-          <Skeleton height={22} style={{ width: 160 }} />
-          <Skeleton height={16} style={{ width: 200 }} />
-          {error && <Text style={{ color: c.danger, textAlign: 'center' }}>{error}</Text>}
-        </View>
-      ) : (
-        <FadeIn>
+    <>
+      <Screen
+        title="Profile"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.accent} />
+        }
+      >
+        {!user ? (
           <View style={s.hero}>
-            <Avatar name={name} uri={user.avatarUrl} size={88} />
-            <Text style={[s.name, { color: c.text }]} accessibilityRole="header">
-              {name}
-            </Text>
-            <Text style={{ color: c.muted }}>{user.email}</Text>
-            <View style={[s.since, { backgroundColor: c.accentSoft }]}>
-              <Text style={{ color: c.accent, fontSize: 13, fontWeight: '600' }}>
-                Blooming since {monthYear(user.createdAt)}
-              </Text>
-            </View>
+            <Skeleton height={88} style={{ width: 88, borderRadius: 44 }} />
+            <Skeleton height={22} style={{ width: 160 }} />
+            <Skeleton height={16} style={{ width: 200 }} />
+            {error && <Text style={{ color: c.danger, textAlign: 'center' }}>{error}</Text>}
           </View>
-        </FadeIn>
-      )}
+        ) : (
+          <FadeIn>
+            <View style={s.hero}>
+              <Avatar name={name} uri={user.avatarUrl} size={88} />
+              <Text style={[s.name, { color: c.text }]} accessibilityRole="header">
+                {name}
+              </Text>
+              <Text style={{ color: c.muted }}>{user.email}</Text>
+              <View style={[s.since, { backgroundColor: c.accentSoft }]}>
+                <Text style={{ color: c.accent, fontSize: 13, fontWeight: '600' }}>
+                  Blooming since {monthYear(user.createdAt)}
+                </Text>
+              </View>
+            </View>
+          </FadeIn>
+        )}
 
-      {user && error && (
-        <Notice tone="error" onDismiss={() => setError(null)}>
-          {error}
-        </Notice>
-      )}
+        {user && error && (
+          <Notice tone="error" onDismiss={() => setError(null)}>
+            {error}
+          </Notice>
+        )}
 
-      <View style={s.stats} accessibilityRole="summary">
-        <Stat label="Accounts" value={String(vault.accounts.length)} />
-        <Stat label="Folders" value={String(vault.folders.length)} />
-        <Stat label="Devices" value={devices ? String(devices.length) : '–'} />
-      </View>
+        <View style={s.stats} accessibilityRole="summary">
+          <Stat label="Accounts" value={String(vault.accounts.length)} />
+          <Stat label="Folders" value={String(vault.folders.length)} />
+          <Stat label="Devices" value={devices ? String(devices.length) : '–'} />
+        </View>
 
-      <Group title="Signing in" footer="Link more sign-in methods from the web app.">
-        {PROVIDERS.map((p) => {
-          const l = linked(p.id);
-          return (
-            <Row
-              key={p.id}
-              icon={p.icon}
-              label={p.label}
-              hint={l?.email}
-              value={methods ? (l ? 'Linked' : 'Not linked') : '…'}
-            />
-          );
-        })}
-        <Row
-          icon="finger-print"
-          label="Passkeys"
-          value={
-            methods ? (methods.passkeys === 0 ? 'None yet' : `${methods.passkeys} saved`) : '…'
-          }
-          last
-        />
-      </Group>
-
-      <Group title="Your vault">
-        <Row icon="sync" label="Last synced" value={timeAgo(vault.lastSyncedAt)} />
-        <Row
-          icon="phone-portrait-outline"
-          label="Devices"
-          hint="See where you're signed in"
-          onPress={() => router.push('/devices')}
-        />
-        <Row icon="time-outline" label="Recent activity" onPress={() => router.push('/activity')} />
-        <Row
-          icon="cloud-upload-outline"
-          label="Encrypted backups"
-          onPress={() => router.push('/backups')}
-          last
-        />
-      </Group>
-
-      <Group>
-        <Row icon="create-outline" label="Edit display name" onPress={() => setEditing(true)} />
-        <Row icon="log-out-outline" label="Sign out" destructive onPress={confirmSignOut} last />
-      </Group>
-
-      <Prompt
-        visible={editing}
-        title="Your display name"
-        initial={user?.displayName ?? ''}
-        onCancel={() => setEditing(false)}
-        onSubmit={async (displayName) => {
-          if (!displayName.trim()) return;
-          try {
-            setUser(await api.users.update(displayName.trim()));
-            haptic('success');
-          } catch (e) {
-            setError(
-              e instanceof Error ? 'We couldn’t save your name. Please try again.' : 'Try again',
+        <Group title="Signing in" footer="Link more sign-in methods from the web app.">
+          {PROVIDERS.map((p) => {
+            const l = linked(p.id);
+            return (
+              <Row
+                key={p.id}
+                icon={p.icon}
+                label={p.label}
+                hint={l?.email}
+                value={methods ? (l ? 'Linked' : 'Not linked') : '…'}
+              />
             );
-          }
-          setEditing(false);
-        }}
-      />
-    </Screen>
+          })}
+          <Row
+            icon="finger-print"
+            label="Passkeys"
+            value={
+              methods ? (methods.passkeys === 0 ? 'None yet' : `${methods.passkeys} saved`) : '…'
+            }
+            last
+          />
+        </Group>
+
+        <Group title="Your vault">
+          <Row icon="sync" label="Last synced" value={timeAgo(vault.lastSyncedAt)} />
+          <Row
+            icon="phone-portrait-outline"
+            label="Devices"
+            hint="See where you're signed in"
+            onPress={() => router.push('/devices')}
+          />
+          <Row
+            icon="time-outline"
+            label="Recent activity"
+            onPress={() => router.push('/activity')}
+          />
+          <Row
+            icon="cloud-upload-outline"
+            label="Encrypted backups"
+            onPress={() => router.push('/backups')}
+            last
+          />
+        </Group>
+
+        <Group>
+          <Row icon="create-outline" label="Edit display name" onPress={() => setEditing(true)} />
+          <Row icon="log-out-outline" label="Sign out" destructive onPress={confirmSignOut} last />
+        </Group>
+
+        <Prompt
+          visible={editing}
+          title="Your display name"
+          initial={user?.displayName ?? ''}
+          onCancel={() => setEditing(false)}
+          onSubmit={async (displayName) => {
+            if (!displayName.trim()) return;
+            try {
+              setUser(await api.users.update(displayName.trim()));
+              haptic('success');
+            } catch (e) {
+              setError(
+                e instanceof Error ? 'We couldn’t save your name. Please try again.' : 'Try again',
+              );
+            }
+            setEditing(false);
+          }}
+        />
+      </Screen>
+      <Modal
+        transparent
+        visible={signOutOpen}
+        animationType="fade"
+        onRequestClose={() => setSignOutOpen(false)}
+      >
+        <Pressable style={s.modalBackdrop} onPress={() => setSignOutOpen(false)}>
+          <Pressable
+            style={[s.modalCard, { backgroundColor: c.surface, borderColor: c.border }]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <Text style={[s.modalTitle, { color: c.text }]}>Sign out of Bloom?</Text>
+            <Text style={[s.modalMessage, { color: c.textMuted }]}>
+              Your codes stay safe in your encrypted vault.
+            </Text>
+            <Button title="Sign out" variant="danger" onPress={doSignOut} />
+            <Button title="Stay" variant="ghost" onPress={() => setSignOutOpen(false)} />
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -213,4 +235,13 @@ const s = StyleSheet.create({
   stats: { flexDirection: 'row', gap: 10 },
   stat: { flex: 1, paddingVertical: 16, paddingHorizontal: 8 },
   statValue: { fontSize: 24, fontWeight: '700' },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  modalCard: { borderWidth: 1, borderRadius: 24, padding: 22, gap: 12 },
+  modalTitle: { fontSize: 18, fontWeight: '600' },
+  modalMessage: { fontSize: 15, lineHeight: 22, marginBottom: 4 },
 });

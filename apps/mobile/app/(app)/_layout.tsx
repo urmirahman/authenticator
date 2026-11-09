@@ -9,11 +9,12 @@ import { useVault } from '@/features/vault/vault-store';
 /** Signed-in area: loads the vault header, and shows the unlock screen until the key is in memory. */
 export default function AppLayout() {
   const vault = useVault();
+  const { status, load } = vault;
   const c = useColors();
 
   useEffect(() => {
-    if (vault.status === 'loading') vault.load().catch(() => router.replace('/sign-in'));
-  }, [vault]);
+    if (status === 'loading') load().catch(() => router.replace('/sign-in'));
+  }, [status, load]);
 
   // Pull changes from other devices every 30s while unlocked.
   useEffect(() => {

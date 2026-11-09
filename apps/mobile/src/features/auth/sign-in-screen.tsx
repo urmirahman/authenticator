@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useLogoMark } from '@/components/brand-images';
 import { useColors } from '@/components/theme';
+import { useVault } from '@/features/vault/vault-store';
 import { Button, Card, FadeIn, Input, Label, Notice, styles as ui } from '@/components/ui';
 import { openWebPage } from '@/lib/web-url';
 import { api, completeSignIn, DEV_AUTH } from '@/lib/api';
@@ -24,6 +25,7 @@ import { googleSignInConfigured, signInWithGoogle } from './google-sign-in';
  */
 export function SignInScreen() {
   const c = useColors();
+  const vault = useVault();
   const mark = useLogoMark();
   const [email, setEmail] = useState('dev@example.com');
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +37,7 @@ export function SignInScreen() {
     setError(null);
     try {
       await completeSignIn(await api.dev.token(email, email.split('@')[0]));
+      vault.reset();
       router.replace('/codes');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sign-in failed');
@@ -51,7 +54,10 @@ export function SignInScreen() {
     setBusy(true);
     setError(null);
     try {
-      if (await signInWithGoogle()) router.replace('/codes');
+      if (await signInWithGoogle()) {
+        vault.reset();
+        router.replace('/codes');
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Google sign-in failed');
     } finally {

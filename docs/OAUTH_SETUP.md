@@ -46,11 +46,25 @@ Also set `ALLOWED_REDIRECTS` to where the web app receives `?code=` (e.g. `http:
 
 The app uses `@react-native-google-signin/google-signin` (ADR 34), so it needs a **development build**, not Expo Go.
 
-1. `apps/mobile/.env`: `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (iOS id) and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (web id). `app.config.ts` turns the iOS id into the URL scheme `com.googleusercontent.apps.<…>` automatically.
+1. `apps/mobile/.env`: `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (iOS id) and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (web id). `app.json` hardcodes the matching URL scheme `com.googleusercontent.apps.<…>` in the `@react-native-google-signin/google-signin` plugin — update it there if the iOS client id changes.
 2. `EXPO_PUBLIC_API_URL`: `http://localhost:8787` works in the iOS Simulator; on a real iPhone use your Mac's LAN IP (and the API must listen on it).
 3. Server: `GOOGLE_CLIENT_ID` = web id, `GOOGLE_EXTRA_AUDIENCES` = iOS id (no client secret needed for mobile: the app sends an id_token).
 4. `cd apps/mobile && npx expo prebuild --clean && npx expo run:ios`. Re-run prebuild whenever the iOS client id changes.
-5. Tap **Continue with Google**. The button is hidden on any platform whose client id is empty (Android until you add one).
+5. Tap **Continue with Google**. If the required client ids are missing, the button shows a setup message.
+
+### Try it on Android (mobile)
+
+1. Register an Android OAuth client in the same Google Cloud project as the web client, with package
+   `dev.urmirahman.authenticator` and the SHA-1 of the certificate signing the installed app.
+   Development, EAS and Google Play builds can use different certificates; register each one you use.
+2. For local builds, set `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` and
+   `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `apps/mobile/.env`. The EAS development, preview and
+   production profiles also include these public client ids in `apps/mobile/eas.json`.
+3. The native SDK has no `androidClientId` option. It identifies the Android client using the package
+   name and signing certificate; `webClientId` requests an ID token for the server's web client ID.
+4. Run `pnpm -F @authenticator/mobile android`, or create a new EAS Android build with the desired
+   profile. Restart Metro with `npx expo start --dev-client --clear` after changing local env values.
+5. Tap **Continue with Google** and complete the account picker.
 
 ## Facebook (Meta) — not used at launch
 
