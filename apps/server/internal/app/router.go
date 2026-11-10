@@ -76,19 +76,19 @@ func NewRouter(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *
 	}
 
 	auditSvc := audit.NewService(q, log)
-	authSvc := auth.NewService(auth.NewRepository(pool), issuer, auth.NewProviders(ctx, cfg), cfg.AllowedRedirects, cfg.RefreshTokenTTL)
+	authSvc := auth.NewService(auth.NewRepository(pool, pool), issuer, auth.NewProviders(ctx, cfg), cfg.AllowedRedirects, cfg.RefreshTokenTTL)
 	authH := auth.NewHandler(authSvc, auditSvc)
 	passkeyH := passkeys.NewHandler(passkeys.NewService(wa, passkeys.NewRepository(q), authSvc), auditSvc)
 	usersH := users.NewHandler(users.NewService(users.NewRepository(q)), auditSvc)
 	backupsH := backups.NewHandler(backups.NewService(backups.NewRepository(q)), auditSvc)
-	devicesH := devices.NewHandler(devices.NewService(devices.NewRepository(pool)), auditSvc)
+	devicesH := devices.NewHandler(devices.NewService(devices.NewRepository(pool, pool)), auditSvc)
 	vaultH := vault.NewHandler(vault.NewService(vault.NewRepository(q)), auditSvc)
-	syncH := syncmod.NewHandler(syncmod.NewService(syncmod.NewRepository(pool)))
+	syncH := syncmod.NewHandler(syncmod.NewService(syncmod.NewRepository(pool, pool)))
 
 	r := NewBaseRouter(cfg, log, pool)
 	r.Route("/v1", func(r chi.Router) {
 		if cfg.CronSecret != "" {
-			r.Get("/internal/cleanup", cleanupHandler(pool, cfg.CronSecret, log))
+			r.Get("/internal/cleanup", cleanupHandler(q, cfg.CronSecret, log))
 		}
 		r.With(authLimit).Route("/auth", authH.Routes)
 		r.Route("/passkeys", func(r chi.Router) { passkeyH.Routes(r, requireAuth, authLimit) })

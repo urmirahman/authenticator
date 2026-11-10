@@ -63,3 +63,22 @@ func IsPoolerURL(dsn string) bool {
 	}
 	return strings.Contains(u.Hostname(), "-pooler")
 }
+
+// Transactor starts a database transaction.
+type Transactor interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+}
+
+// InTx executes fn inside a transaction, automatically rolling back on error or committing on success.
+func InTx(ctx context.Context, txBeginner Transactor, fn func(tx pgx.Tx) error) error {
+	tx, err := txBeginner.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if err := fn(tx); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}

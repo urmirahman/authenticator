@@ -8,9 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/urmirahman/authenticator/apps/server/internal/db"
+	"github.com/urmirahman/authenticator/apps/server/internal/platform/database"
 )
 
 var ErrEmailTaken = errors.New("an account with this email already exists; sign in with the original method and link this provider")
@@ -33,12 +33,12 @@ type Repository interface {
 }
 
 type pgRepository struct {
-	pool *pgxpool.Pool
-	q    *db.Queries
+	tx database.Transactor
+	q  *db.Queries
 }
 
-func NewRepository(pool *pgxpool.Pool) Repository {
-	return &pgRepository{pool: pool, q: db.New(pool)}
+func NewRepository(dbConn db.DBTX, tx database.Transactor) Repository {
+	return &pgRepository{tx: tx, q: db.New(dbConn)}
 }
 
 // LinkDecision is the pure rule for "what do we do with this provider profile?".
@@ -67,55 +67,57 @@ func DecideLink(identityExists, userWithEmailExists, emailVerified bool) LinkDec
 
 // FindOrCreateUser applies DecideLink inside one transaction.
 func (r *pgRepository) FindOrCreateUser(ctx context.Context, p Profile) (uuid.UUID, error) {
-	tx, err := r.pool.Begin(ctx)
+	var userID uuid.UUID
+	err := database.InTx(ctx, r.tx, func(tx pgx.Tx) error {
+		q := r.q.WithTx(tx)
+
+		ident, err := q.GetIdentity(ctx, db.GetIdentityParams{Provider: p.Provider, ProviderUserID: p.ProviderUserID})
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return err
+		}
+		identityExists := err == nil
+
+		var existing db.User
+		userExists := false
+		if !identityExists && p.Email != "" {
+			existing, err = q.GetUserByEmail(ctx, p.Email)
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				return err
+			}
+			userExists = err == nil
+		}
+
+		switch DecideLink(identityExists, userExists, p.EmailVerified) {
+		case UseLinkedUser:
+			userID = ident.UserID
+			return nil
+		case RejectEmailTaken:
+			return ErrEmailTaken
+		case LinkToExisting:
+			userID = existing.ID
+		case CreateNew:
+			email := p.Email
+			if email == "" { // e.g. Facebook without email permission
+				email = p.Provider + ":" + p.ProviderUserID
+			}
+			u, err := q.CreateUser(ctx, db.CreateUserParams{Email: email, DisplayName: p.Name})
+			if err != nil {
+				return err
+			}
+			userID = u.ID
+		}
+		if _, err := q.CreateIdentity(ctx, db.CreateIdentityParams{
+			UserID: userID, Provider: p.Provider, ProviderUserID: p.ProviderUserID,
+			Email: pgtype.Text{String: p.Email, Valid: p.Email != ""}, EmailVerified: p.EmailVerified,
+		}); err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return uuid.Nil, err
 	}
-	defer func() { _ = tx.Rollback(ctx) }() // no-op after Commit
-	q := r.q.WithTx(tx)
-
-	ident, err := q.GetIdentity(ctx, db.GetIdentityParams{Provider: p.Provider, ProviderUserID: p.ProviderUserID})
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return uuid.Nil, err
-	}
-	identityExists := err == nil
-
-	var existing db.User
-	userExists := false
-	if !identityExists && p.Email != "" {
-		existing, err = q.GetUserByEmail(ctx, p.Email)
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			return uuid.Nil, err
-		}
-		userExists = err == nil
-	}
-
-	var userID uuid.UUID
-	switch DecideLink(identityExists, userExists, p.EmailVerified) {
-	case UseLinkedUser:
-		return ident.UserID, tx.Commit(ctx)
-	case RejectEmailTaken:
-		return uuid.Nil, ErrEmailTaken
-	case LinkToExisting:
-		userID = existing.ID
-	case CreateNew:
-		email := p.Email
-		if email == "" { // e.g. Facebook without email permission
-			email = p.Provider + ":" + p.ProviderUserID
-		}
-		u, err := q.CreateUser(ctx, db.CreateUserParams{Email: email, DisplayName: p.Name})
-		if err != nil {
-			return uuid.Nil, err
-		}
-		userID = u.ID
-	}
-	if _, err := q.CreateIdentity(ctx, db.CreateIdentityParams{
-		UserID: userID, Provider: p.Provider, ProviderUserID: p.ProviderUserID,
-		Email: pgtype.Text{String: p.Email, Valid: p.Email != ""}, EmailVerified: p.EmailVerified,
-	}); err != nil {
-		return uuid.Nil, err
-	}
-	return userID, tx.Commit(ctx)
+	return userID, nil
 }
 
 func (r *pgRepository) SaveState(ctx context.Context, s OAuthState) error {

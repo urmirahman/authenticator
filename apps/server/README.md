@@ -51,20 +51,43 @@ Read in this order:
 
 ## Layout
 
-```
-cmd/api, cmd/migrate        entry points
-internal/app                wiring + /health (+ integration test, software authenticator)
-internal/modules/
-  auth      OAuth (Google/Facebook/Apple), login codes, refresh rotation, account linking
-  passkeys  WebAuthn register/login/list/rename/delete
-  users     /users/me get/update/delete
-  devices   register, list, remote sign-out
-  vault     vault key envelope (create, get, re-key)
-  sync      encrypted items + folders, push/pull, conflicts, tombstones
-  audit     activity log
-  dev       DEV_AUTH token minting (local only)
-internal/middleware         auth, logging, security headers, request ids, rate limits
-pkg/                        httpx, token, idtoken (JWKS), applesecret
-migrations/, queries/       goose SQL, sqlc SQL
-api/openapi.yaml            API spec
+```text
+apps/server/
+├── cmd/                     # Application binaries (entry points)
+│   ├── api/main.go          # Standalone server daemon (local dev, Docker, K8s)
+│   └── migrate/main.go      # CLI database migration tool (Goose)
+├── api/
+│   └── index.go             # Vercel Serverless entry point
+├── internal/                # Private application code (Go compiler enforced)
+│   ├── app/                 # Composition root & wiring
+│   │   ├── router.go        # Builds dependencies, registers Chi routes & middleware
+│   │   ├── serverless.go    # Cold-start handler & pooled connection lifecycle
+│   │   └── maintenance.go   # /v1/internal/cleanup cron handler
+│   ├── config/              # Environment config loading & validation
+│   ├── platform/            # Low-level infrastructure adapters
+│   │   ├── database/        # pgx connection pool & InTx transaction runner
+│   │   ├── httpserver/      # net/http wrapper with timeouts & graceful shutdown
+│   │   └── logger/          # slog structured logger
+│   ├── middleware/          # Cross-cutting HTTP middleware
+│   │   ├── middleware.go    # JWT Bearer auth & context extraction (UserID, SessionID)
+│   │   └── security.go      # CSP, HSTS, CORS headers & rate limiting
+│   ├── db/                  # Generated type-safe sqlc query layer
+│   └── modules/             # Business domain feature slices
+│       ├── auth/            # OAuth2 (Google/Apple/Facebook), refresh token rotation
+│       ├── vault/           # Zero-knowledge vault key envelopes & Argon2id KDF
+│       ├── sync/            # Optimistic concurrency sync engine & vault items CRUD
+│       ├── passkeys/        # WebAuthn/FIDO2 registration & passkey login
+│       ├── devices/         # Device registration & remote session kill switch
+│       ├── users/           # User profile, account export & GDPR deletion
+│       ├── backups/         # Encrypted vault backup blobs & retention caps
+│       ├── audit/           # Security audit event recording & user activity feed
+│       └── dev/             # Mock token minting for local curl tests (non-prod)
+├── queries/                 # SQL source files compiled by sqlc
+├── migrations/              # SQL schema migration files (Goose)
+└── pkg/                     # Packages exposed outside internal/
+    ├── serverless/          # Public bridge for Vercel Go runtime builder
+    ├── httpx/               # JSON encode/decode, size limits & error mapping
+    ├── token/               # JWT HS256 access token minting & verification
+    ├── idtoken/             # Google/Apple OIDC identity token verification
+    └── applesecret/         # ES256 client secret minting for Apple Sign-In
 ```
