@@ -6,8 +6,13 @@ if (!message) {
   process.exit(1);
 }
 
-for (const args of [['add', '-A'], ['commit', '-m', `chore: 🔥 ${message}`], ['push']]) {
-  const result = spawnSync('git', args, { stdio: 'inherit' });
+for (const [command, args] of [
+  ['pnpm', ['format']],
+  ['git', ['add', '-A']],
+  ['git', ['commit', '-m', `chore: 🔥 ${message}`]],
+  ['git', ['push']],
+]) {
+  const result = spawnSync(command, args, { stdio: 'inherit' });
   if (result.error) {
     console.error(result.error.message);
     process.exit(1);

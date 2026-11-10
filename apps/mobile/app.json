@@ -4,7 +4,7 @@
     "slug": "authenticator",
     "owner": "rahmanurmi",
     "scheme": ["authenticator", "exp+authenticator"],
-    "version": "0.1.1",
+    "version": "0.1.2",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "dev.urmirahman.authenticator",
-      "versionCode": 3,
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
