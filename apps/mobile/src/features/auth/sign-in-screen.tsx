@@ -1,6 +1,6 @@
 import { brand } from '@repo/brand';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -31,9 +31,13 @@ export function SignInScreen() {
   const [email, setEmail] = useState('dev@example.com');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [offlineBusy, setOfflineBusy] = useState(false);
+  const pending = useRef<'google' | 'offline' | null>(null);
   const [setupMissing, setSetupMissing] = useState(false);
 
   const devLogin = async () => {
+    if (pending.current) return;
+    pending.current = 'google';
     setBusy(true);
     setError(null);
     try {
@@ -43,12 +47,16 @@ export function SignInScreen() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sign-in failed');
     } finally {
+      pending.current = null;
       setBusy(false);
     }
   };
 
   const google = async () => {
+    if (pending.current) return;
+    pending.current = 'google';
     if (!googleSignInConfigured) {
+      pending.current = null;
       setSetupMissing(true);
       return;
     }
@@ -62,12 +70,15 @@ export function SignInScreen() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Google sign-in failed');
     } finally {
+      pending.current = null;
       setBusy(false);
     }
   };
 
   const continueOffline = async () => {
-    setBusy(true);
+    if (pending.current) return;
+    pending.current = 'offline';
+    setOfflineBusy(true);
     setError(null);
     try {
       const existingProfile = await session.getLocalProfile();
@@ -80,7 +91,8 @@ export function SignInScreen() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not start offline mode');
     } finally {
-      setBusy(false);
+      pending.current = null;
+      setOfflineBusy(false);
     }
   };
 
@@ -109,9 +121,9 @@ export function SignInScreen() {
           <Button
             variant="ghost"
             icon="lock-closed-outline"
-            title="Offline"
+            title={offlineBusy ? '…' : 'Offline'}
             onPress={continueOffline}
-            disabled={busy}
+            disabled={offlineBusy}
           />
           {DEV_AUTH && (
             <Card style={s.dev}>

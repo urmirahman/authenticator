@@ -144,7 +144,7 @@ export function BackupScreen() {
   if (offline) {
     return (
       <Screen>
-        <Notice>Offline mode doesn’t need a backup.</Notice>
+        <Notice>Cloud backup needs a sign-in. Use Export JSON on this phone.</Notice>
       </Screen>
     );
   }
@@ -171,11 +171,10 @@ export function BackupScreen() {
           value={pw.confirm}
           onChangeText={(confirm) => setPw({ ...pw, confirm })}
         />
-        <Button
-          title="Create backup"
-          onPress={create}
-          disabled={busy || vault.accounts.length === 0}
-        />
+        {vault.accounts.length === 0 && (
+          <Muted>Add a code first. A backup needs at least one account.</Muted>
+        )}
+        <Button title="Backup" onPress={create} disabled={busy || vault.accounts.length === 0} />
       </Section>
       {busy && <ActivityIndicator color={c.accent} />}
       {msg && <Text style={{ color: c.text }}>{msg}</Text>}

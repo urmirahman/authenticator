@@ -22,18 +22,18 @@ import { useVault } from './vault-store';
 const INTRO = [
   {
     icon: 'lock-closed-outline' as const,
-    title: 'Your codes, encrypted on this phone',
-    body: 'Bloom encrypts every 2FA account on your device before it syncs. Our servers only ever see ciphertext.',
+    title: 'Encrypted on this device',
+    body: 'Servers only see locked data.',
   },
   {
     icon: 'key-outline' as const,
-    title: 'One master password unlocks it',
-    body: 'Pick a long passphrase you’ll remember. It never leaves your device — not even to us.',
+    title: 'One master password',
+    body: 'It never leaves this device.',
   },
   {
     icon: 'heart-outline' as const,
-    title: 'Nobody can reset it',
-    body: 'If you forget it, your vault can’t be recovered. Write it down and keep it somewhere safe, and keep encrypted backups.',
+    title: 'Nobody can open it',
+    body: 'If you forget it, nobody can open the vault. Write it down.',
   },
 ];
 
@@ -84,7 +84,7 @@ function Onboarding({
         </FadeIn>
         <View style={{ height: 8 }} />
         <Button
-          title={last ? 'Create my master password' : 'Next'}
+          title={last ? 'Create' : 'Next'}
           onPress={() => (last ? onDone() : setStep(step + 1))}
         />
         {step > 0 && <Button variant="ghost" title="Back" onPress={() => setStep(step - 1)} />}
@@ -262,12 +262,7 @@ export function UnlockScreen() {
             />
           )}
           {!isSetup && vault.biometric.enabled && (
-            <Button
-              variant="ghost"
-              icon="scan-outline"
-              title="Use Face ID / fingerprint"
-              onPress={tryBiometric}
-            />
+            <Button variant="ghost" icon="scan-outline" title="Face ID" onPress={tryBiometric} />
           )}
           <Button variant="ghost" title={leaveLabel} onPress={leave} disabled={busy || leaving} />
           {error && (

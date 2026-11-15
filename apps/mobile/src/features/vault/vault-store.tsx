@@ -163,7 +163,11 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, [refreshBiometric]);
 
   const sync = useCallback(async () => {
-    if (await session.isOffline()) return;
+    if (await session.isOffline()) {
+      if (!key.current) return;
+      apply(await localVault.loadLocalItems());
+      return;
+    }
     const v = vault.current;
     if (!v || !key.current) return;
     const currentGeneration = generation.current;

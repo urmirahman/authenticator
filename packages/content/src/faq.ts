@@ -9,46 +9,54 @@ export interface Faq {
 export const faqs: Faq[] = [
   {
     q: 'Can you see my 2FA codes?',
-    a: 'No. Your accounts are encrypted on your device with a key only your master password can unlock. We store ciphertext we cannot decrypt.',
+    a: 'No. Codes are encrypted on your device. We only store data we cannot read.',
     featured: true,
   },
   {
     q: 'What if I forget my master password?',
-    a: 'We cannot reset it or recover your vault. Keep your recovery kit somewhere safe, make encrypted backups, and keep the backup codes each website gives you when you turn on 2FA.',
+    a: 'We cannot reset it. Write it down and keep a backup.',
     featured: true,
   },
   {
     q: 'Do codes work offline?',
-    a: 'Yes. Codes are generated on your device from the current time. Once your vault is unlocked, no connection is needed. Sync needs a connection.',
+    a: 'Yes. Codes need no connection. Sync does.',
     featured: true,
   },
   {
     q: 'How do I move from Google Authenticator?',
-    a: 'In Google Authenticator choose "Transfer accounts → Export", then open Settings → Import in Bloom and scan the QR (or upload a screenshot on web). Unencrypted 2FAS and Aegis exports work too.',
+    a: 'Google Authenticator, then Transfer accounts, then Export. In Bloom, open Settings, then Import, and scan or upload the QR.',
     featured: true,
   },
   {
     q: 'How do I move to another app later?',
-    a: 'Use Transfer to show Google-compatible QR codes, or create an encrypted backup. You are never locked in.',
+    a: 'Show a transfer QR, or make an encrypted backup.',
   },
   {
     q: 'Why do I need both a sign-in and a master password?',
-    a: 'Signing in (Google or a passkey) proves who you are so we can sync your vault. The master password is what decrypts it, and it never leaves your device.',
+    a: 'Sign-in syncs the vault. The master password decrypts it and stays on your device.',
   },
   {
     q: 'Is biometric unlock safe?',
-    a: "It's optional. When on, a copy of your vault key is kept in your phone's secure hardware and released only after Face ID or fingerprint. Anyone who can pass your phone's biometrics could open the vault, so only enable it on a phone only you use.",
+    a: 'Optional. The key stays in the phone’s secure hardware and opens with Face ID or fingerprint. Use it only on your own phone.',
   },
   {
     q: 'A code is rejected. What now?',
-    a: "Check your device's clock is set automatically; TOTP codes depend on the exact time. Wait for the next code and try again.",
+    a: 'Set the clock to automatic, then try the next code.',
   },
   {
     q: 'How do I delete my account?',
-    a: 'Settings → Delete account. Turn off 2FA on websites first (or move those accounts elsewhere), because deleting removes your encrypted vault permanently.',
+    a: 'Settings, then Delete account. Turn off 2FA on those sites first. This deletes the vault.',
   },
   {
     q: 'Does Bloom use cookies or trackers?',
-    a: 'No trackers, no ads, no analytics. The web app only stores what it needs to keep you signed in and your preferences. See the Cookie notice.',
+    a: 'No trackers or ads. The web app only stores sign-in and preferences. See the Cookie notice.',
+  },
+  {
+    q: 'How do I import a Bloom JSON file?',
+    a: 'Settings, then Import JSON. Pick the Export JSON file. Accounts you already have are skipped.',
+  },
+  {
+    q: 'Why is Backup off?',
+    a: 'It needs a signed-in vault with at least one code. Offline mode uses Export JSON instead. The backup password must be at least 10 characters and match the confirm field.',
   },
 ];

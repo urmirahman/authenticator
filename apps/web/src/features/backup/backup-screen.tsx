@@ -127,8 +127,13 @@ export function BackupScreen() {
             autoComplete="new-password"
           />
         </Field>
+        {vault.accounts.length === 0 && (
+          <p className="text-sm text-muted">
+            Add a code first. A backup needs at least one account.
+          </p>
+        )}
         <Button disabled={busy || vault.accounts.length === 0}>
-          {busy ? 'Working…' : 'Create backup'}
+          {busy ? 'Working…' : 'Backup'}
         </Button>
       </form>
 

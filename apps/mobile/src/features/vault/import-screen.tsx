@@ -13,9 +13,9 @@ import { NO_QR_MESSAGE, pickQrImages } from './qr-images';
 import { useVault } from './vault-store';
 
 const GOOGLE_STEPS = [
-  'Open Google Authenticator → Transfer accounts → Export',
-  'Select all, then photo or scan the QR',
-  'Scan it here and check the codes match',
+  'Google Authenticator, then Transfer accounts, then Export.',
+  'Select the accounts and show the QR.',
+  'Scan or upload it here.',
 ];
 
 type Msg = { tone: 'success' | 'error' | 'info'; text: string } | null;
@@ -172,7 +172,7 @@ export function ImportScreen() {
           </Card>
           <Button
             icon="add-circle-outline"
-            title={busy ? 'Adding…' : `Add ${found.length} account${found.length === 1 ? '' : 's'}`}
+            title={busy ? 'Adding…' : 'Add'}
             onPress={save}
             disabled={busy}
           />
@@ -184,26 +184,12 @@ export function ImportScreen() {
           <Text style={[s.title, { color: c.text }]} accessibilityRole="header">
             Bring your accounts
           </Text>
-          <Button icon="qr-code-outline" title="Scan export QR codes" onPress={startScan} />
+          <Button icon="qr-code-outline" title="Scan QR" onPress={startScan} />
           {permission && !permission.granted && !permission.canAskAgain && (
-            <Button
-              variant="ghost"
-              title="Open Settings to allow the camera"
-              onPress={() => Linking.openSettings()}
-            />
+            <Button variant="ghost" title="Allow camera" onPress={() => Linking.openSettings()} />
           )}
-          <Button
-            variant="secondary"
-            icon="images-outline"
-            title="Choose from photos"
-            onPress={fromPhotos}
-          />
-          <Button
-            variant="secondary"
-            icon="document-outline"
-            title="Choose a 2FAS or Aegis file"
-            onPress={fromFile}
-          />
+          <Button variant="secondary" icon="images-outline" title="Photos" onPress={fromPhotos} />
+          <Button variant="secondary" icon="document-outline" title="File" onPress={fromFile} />
           <Card style={{ gap: 6 }}>
             <Text style={{ color: c.text, fontWeight: '600' }}>From Google Authenticator</Text>
             {GOOGLE_STEPS.map((step, i) => (
@@ -214,7 +200,7 @@ export function ImportScreen() {
           </Card>
           <Button
             variant="ghost"
-            title={pasting ? 'Hide paste box' : 'Paste a link or file contents instead'}
+            title={pasting ? 'Hide' : 'Paste'}
             onPress={() => setPasting(!pasting)}
           />
           {pasting && (
@@ -231,7 +217,7 @@ export function ImportScreen() {
               />
               <Button
                 variant="secondary"
-                title="Read accounts"
+                title="Read"
                 disabled={!text.trim()}
                 onPress={() => preview([text])}
               />

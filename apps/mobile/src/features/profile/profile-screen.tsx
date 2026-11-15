@@ -139,7 +139,12 @@ export function ProfileScreen() {
         )}
 
         <View style={s.stats} accessibilityRole="summary">
-          <Stat label="Accounts" value={String(vault.accounts.length)} />
+          <Stat
+            label="Accounts"
+            value={String(vault.accounts.length)}
+            hint="Codes in this vault"
+            onPress={() => router.push('/codes')}
+          />
           <Stat label="Folders" value={String(vault.folders.length)} />
           <Stat label="Devices" value={devices ? String(devices.length) : '–'} />
         </View>
@@ -161,7 +166,7 @@ export function ProfileScreen() {
             />
           </Group>
         ) : (
-          <Group title="Signing in" footer="Link more sign-in methods from the web app.">
+          <Group title="Signing in">
             {PROVIDERS.map((p) => {
               const l = linked(p.id);
               return (
@@ -171,17 +176,10 @@ export function ProfileScreen() {
                   label={p.label}
                   hint={l?.email}
                   value={methods ? (l ? 'Linked' : 'Not linked') : '…'}
+                  last
                 />
               );
             })}
-            <Row
-              icon="finger-print"
-              label="Passkeys"
-              value={
-                methods ? (methods.passkeys === 0 ? 'None yet' : `${methods.passkeys} saved`) : '…'
-              }
-              last
-            />
           </Group>
         )}
 
@@ -277,15 +275,38 @@ export function ProfileScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  hint,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  onPress?: () => void;
+}) {
   const c = useColors();
-  return (
+  const body = (
     <Card style={s.stat}>
-      <View accessible accessibilityLabel={`${value} ${label}`} style={{ alignItems: 'center' }}>
+      <View
+        accessible
+        accessibilityLabel={hint ? `${value} ${label}. ${hint}` : `${value} ${label}`}
+        style={{ alignItems: 'center', gap: 2 }}
+      >
         <Text style={[s.statValue, { color: c.text }]}>{value}</Text>
         <Text style={{ color: c.muted, fontSize: 13 }}>{label}</Text>
+        {hint ? (
+          <Text style={{ color: c.muted, fontSize: 11, textAlign: 'center' }}>{hint}</Text>
+        ) : null}
       </View>
     </Card>
+  );
+  if (!onPress) return body;
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" style={{ flex: 1 }}>
+      {body}
+    </Pressable>
   );
 }
 

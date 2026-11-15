@@ -188,7 +188,7 @@ export function SettingsScreen() {
 
       <Section title="Your data">
         <Button variant="secondary" onClick={exportData}>
-          Download my data (JSON)
+          Export JSON
         </Button>
         <a
           href="/recovery-kit"

@@ -14,16 +14,16 @@ const MIN_LENGTH = 10;
 
 const INTRO = [
   {
-    title: 'Welcome to Bloom',
-    body: 'Your 2FA codes will be encrypted on this device before they sync. Our servers only ever see locked boxes.',
+    title: 'Encrypted on this device',
+    body: 'Servers only see locked data.',
   },
   {
-    title: 'One password unlocks everything',
-    body: 'Next you choose a master password. Bloom turns it into the key for your vault. It never leaves your device.',
+    title: 'One master password',
+    body: 'It never leaves this device.',
   },
   {
-    title: 'We can’t recover it',
-    body: 'If you forget your master password, nobody — including us — can open your vault. Use a long passphrase you will remember, and print the recovery kit afterwards.',
+    title: 'Nobody can open it',
+    body: 'If you forget it, nobody can open the vault. Write it down.',
   },
 ];
 

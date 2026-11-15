@@ -10,9 +10,9 @@ import { readQrFromFile } from '@/features/add-account/qr';
 import { useVault } from '@/features/vault/vault-context';
 
 const GOOGLE_STEPS = [
-  'Open Google Authenticator → Transfer accounts → Export',
-  'Select all, then photo or scan the QR',
-  'Upload it here and check the codes match',
+  'Google Authenticator, then Transfer accounts, then Export.',
+  'Select the accounts and show the QR.',
+  'Scan or upload it here.',
 ];
 
 /**
@@ -105,7 +105,7 @@ export function ImportSection() {
               dragging ? 'border-accent bg-accent-soft' : 'border-line text-muted'
             }`}
           >
-            <span className="font-medium text-fg">{busy ? 'Reading…' : 'Upload QR image'}</span>
+            <span className="font-medium text-fg">{busy ? 'Reading…' : 'QR image'}</span>
             <span>Drop screenshots here or click to choose. You can pick several at once.</span>
             <input
               type="file"
@@ -134,7 +134,7 @@ export function ImportSection() {
             aria-expanded={pasting}
             onClick={() => setPasting(!pasting)}
           >
-            {pasting ? 'Hide paste box' : 'Paste a link or file contents instead'}
+            {pasting ? 'Hide' : 'Paste'}
           </button>
           {pasting && (
             <div className="space-y-2">
@@ -157,7 +157,7 @@ export function ImportSection() {
                   preview([text]);
                 }}
               >
-                Read accounts
+                Read
               </Button>
             </div>
           )}
@@ -177,7 +177,7 @@ export function ImportSection() {
             ))}
           </ul>
           <Button disabled={busy} onClick={save}>
-            Add {found.length} account{found.length === 1 ? '' : 's'}
+            Add
           </Button>
           <Button variant="ghost" onClick={() => setFound([])}>
             Cancel
