@@ -54,6 +54,8 @@ interface VaultState {
   error: string | null;
   load(): Promise<void>;
   reset(): void;
+  /** Drop in-memory vault without entering `loading` (sign-out while `(app)` is still mounted). */
+  abandon(): void;
   setup(password: string): Promise<void>;
   unlock(password: string): Promise<void>;
   /** True if the password opens the vault envelope (doesn't change state). */
@@ -88,7 +90,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const generation = useRef(0);
   const [biometric, setBiometricState] = useState({ available: false, enabled: false });
 
-  const reset = useCallback(() => {
+  const wipe = useCallback(() => {
     generation.current += 1;
     key.current?.fill(0);
     key.current = null;
@@ -99,8 +101,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     setLastSyncedAt(null);
     setError(null);
     setBiometricState({ available: false, enabled: false });
-    setStatus('loading');
   }, []);
+
+  const reset = useCallback(() => {
+    wipe();
+    setStatus('loading');
+  }, [wipe]);
+
+  const abandon = useCallback(() => {
+    wipe();
+    setStatus('needs-setup');
+  }, [wipe]);
 
   const refreshBiometric = useCallback(async () => {
     const v = vault.current;
@@ -363,6 +374,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       folders: sortFolders(all.filter((i) => i.kind === 'folder') as Decrypted<FolderData>[]),
       load,
       reset,
+      abandon,
       setup,
       unlock,
       verifyPassword,
@@ -383,6 +395,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     error,
     load,
     reset,
+    abandon,
     setup,
     unlock,
     verifyPassword,

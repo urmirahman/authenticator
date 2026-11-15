@@ -214,7 +214,7 @@ export function ProfileScreen() {
           <Row icon="create-outline" label="Edit display name" onPress={() => setEditing(true)} />
           <Row
             icon="log-out-outline"
-            label={isOffline ? 'Leave offline mode' : 'Sign out'}
+            label={isOffline ? 'Leave' : 'Sign out'}
             destructive
             onPress={confirmSignOut}
             last

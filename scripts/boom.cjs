@@ -1,10 +1,6 @@
 const { spawnSync } = require('node:child_process');
 
-const message = process.argv.slice(2).join(' ').trim();
-if (!message) {
-  console.error('Usage: pnpm boom <commit message>');
-  process.exit(1);
-}
+const message = process.argv.slice(2).join(' ').trim() || 'update';
 
 for (const [command, args] of [
   ['pnpm', ['format']],

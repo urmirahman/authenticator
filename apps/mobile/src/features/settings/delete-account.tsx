@@ -1,14 +1,11 @@
 import { ApiError } from '@repo/api-client';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
 import { Button, Card, Input, Label, Muted, styles as ui } from '@/components/ui';
-import { signOutGoogle } from '@/features/auth/google-sign-in';
-import { clearBiometricKey } from '@/features/security/biometric-key';
+import { leaveApp } from '@/features/session/leave-app';
 import { session } from '@/features/session/session';
-import { localVault } from '@/features/vault/local-vault';
 import { useVault } from '@/features/vault/vault-store';
-import { api, signOut } from '@/lib/api';
+import { api } from '@/lib/api';
 
 /**
  * Danger zone: permanently delete the account. The master password is checked on-device (the
@@ -21,13 +18,7 @@ export function DeleteAccount() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const leave = async () => {
-    vault.lock();
-    await clearBiometricKey();
-    await signOutGoogle();
-    await signOut();
-    router.replace('/sign-in');
-  };
+  const leave = () => leaveApp(vault);
 
   const run = async () => {
     setError(null);
@@ -35,10 +26,7 @@ export function DeleteAccount() {
     try {
       if (!(await vault.verifyPassword(password))) throw new Error('Wrong master password.');
       if (await session.isOffline()) {
-        await localVault.clearLocalVault();
-        await session.clear();
-        vault.reset();
-        router.replace('/sign-in');
+        await leave();
         Alert.alert('Vault deleted', 'Your local vault and all data on this device were removed.');
         return;
       }

@@ -109,7 +109,7 @@ export function SignInScreen() {
           <Button
             variant="ghost"
             icon="lock-closed-outline"
-            title="Use offline (no account)"
+            title="Offline"
             onPress={continueOffline}
             disabled={busy}
           />

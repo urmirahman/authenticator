@@ -5,6 +5,7 @@
 ```bash
 pnpm db:up                     # Postgres 16 in Docker on localhost:5433
 pnpm db:migrate                # goose: apply migrations/*.sql
+pnpm db:reset                  # truncate all rows (local dev); production needs RESET_DB=1
 cp apps/server/.env.example apps/server/.env   # then: set -a; source apps/server/.env; set +a
 pnpm server                    # hot reload (air) on http://localhost:8787
 ```

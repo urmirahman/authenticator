@@ -5,21 +5,31 @@ import { localVault } from '@/features/vault/local-vault';
 import { signOut } from '@/lib/api';
 import { session } from './session';
 
+type VaultLeave = { abandon(): void };
+
+let leaving: Promise<void> | null = null;
+
 /**
  * Leave the signed-in shell and return to the sign-in screen.
  * Offline mode also wipes the on-device vault so the next start is empty.
+ * Concurrent calls share one in-flight promise.
  */
-export async function leaveApp(vault: { lock(): void; reset(): void }) {
-  vault.lock();
+async function leaveOnce(vault: VaultLeave) {
   await clearBiometricKey();
   if (await session.isOffline()) {
     await localVault.clearLocalVault();
     await session.clear();
-    vault.reset();
-    router.replace('/sign-in');
-    return;
+  } else {
+    await signOutGoogle();
+    await signOut();
   }
-  await signOutGoogle();
-  await signOut();
+  vault.abandon();
   router.replace('/sign-in');
+}
+
+export function leaveApp(vault: VaultLeave) {
+  leaving ??= leaveOnce(vault).finally(() => {
+    leaving = null;
+  });
+  return leaving;
 }

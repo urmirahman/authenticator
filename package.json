@@ -17,6 +17,7 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:migrate": "pnpm -F @authenticator/server migrate",
+    "db:reset": "pnpm -F @authenticator/server db:reset",
     "db:generate": "pnpm -F @authenticator/server generate",
     "cz": "git add -A && git cz",
     "boom": "node scripts/boom.cjs",

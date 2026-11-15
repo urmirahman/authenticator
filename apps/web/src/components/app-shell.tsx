@@ -52,7 +52,7 @@ export function AppShell({
         if (!session.isSignedIn()) router.replace('/sign-in');
       });
     }
-  }, [router, vault]);
+  }, [router, vault.status, vault.load]);
 
   // Close the drawer on navigation and with Escape.
   useEffect(() => setMenuOpen(false), [pathname]);

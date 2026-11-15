@@ -12,6 +12,7 @@
     "test": "go test ./...",
     "migrate": "go run ./cmd/migrate up",
     "migrate:down": "go run ./cmd/migrate down",
+    "db:reset": "go run ./cmd/reset",
     "generate": "sqlc generate",
     "test:integration": "TEST_DATABASE_URL=${TEST_DATABASE_URL:-postgres://authenticator:authenticator@localhost:5433/authenticator_test?sslmode=disable} go test -count=1 -run Integration ./internal/app/",
     "db:create-test": "docker compose -f ../../docker-compose.yml exec -T postgres psql -U authenticator -c 'CREATE DATABASE authenticator_test' || true"

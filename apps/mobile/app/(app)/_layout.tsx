@@ -15,7 +15,10 @@ export default function AppLayout() {
   const c = useColors();
 
   useEffect(() => {
-    if (status === 'loading') load().catch(() => router.replace('/sign-in'));
+    if (status !== 'loading') return;
+    load().catch(async () => {
+      if (!(await session.isSignedIn())) router.replace('/sign-in');
+    });
   }, [status, load]);
 
   // Pull changes from other devices every 30s while unlocked (cloud only).

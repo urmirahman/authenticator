@@ -42,10 +42,12 @@ function Onboarding({
   onDone,
   onLeave,
   leaveLabel,
+  leaving,
 }: {
   onDone: () => void;
   onLeave: () => void;
   leaveLabel: string;
+  leaving: boolean;
 }) {
   const c = useColors();
   const mark = useLogoMark();
@@ -86,7 +88,7 @@ function Onboarding({
           onPress={() => (last ? onDone() : setStep(step + 1))}
         />
         {step > 0 && <Button variant="ghost" title="Back" onPress={() => setStep(step - 1)} />}
-        <Button variant="ghost" title={leaveLabel} onPress={onLeave} />
+        <Button variant="ghost" title={leaveLabel} onPress={onLeave} disabled={leaving} />
       </View>
     </View>
   );
@@ -106,19 +108,21 @@ export function UnlockScreen() {
   const [introDone, setIntroDone] = useState(false);
   const [ack, setAck] = useState(false);
   const [offline, setOffline] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const strength = strengthOf(password);
-  const leaveLabel = offline
-    ? 'Leave offline mode'
-    : isSetup
-      ? 'Use a different account'
-      : 'Sign out';
+  const leaveLabel = offline || isSetup ? 'Leave' : 'Sign out';
 
   useEffect(() => {
     session.isOffline().then(setOffline);
   }, []);
 
   const leave = () => {
-    leaveApp(vault).catch(() => setError('Could not sign out. Try again.'));
+    if (leaving) return;
+    setLeaving(true);
+    leaveApp(vault).catch(() => {
+      setLeaving(false);
+      setError('Could not sign out. Try again.');
+    });
   };
 
   const tryBiometric = async () => {
@@ -158,7 +162,14 @@ export function UnlockScreen() {
   };
 
   if (isSetup && !introDone)
-    return <Onboarding onDone={() => setIntroDone(true)} onLeave={leave} leaveLabel={leaveLabel} />;
+    return (
+      <Onboarding
+        onDone={() => setIntroDone(true)}
+        onLeave={leave}
+        leaveLabel={leaveLabel}
+        leaving={leaving}
+      />
+    );
 
   return (
     <KeyboardAvoidingView
@@ -258,7 +269,7 @@ export function UnlockScreen() {
               onPress={tryBiometric}
             />
           )}
-          <Button variant="ghost" title={leaveLabel} onPress={leave} disabled={busy} />
+          <Button variant="ghost" title={leaveLabel} onPress={leave} disabled={busy || leaving} />
           {error && (
             <Text style={[ui.error, { textAlign: 'center' }]} accessibilityLiveRegion="polite">
               {error}

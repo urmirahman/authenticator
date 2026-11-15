@@ -48,6 +48,7 @@ export function BackupScreen() {
   const [msg, setMsg] = useState<string | null>(null);
   const [offline, setOffline] = useState<boolean | null>(null);
   const [needsReauth, setNeedsReauth] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const noteAuthFailure = useCallback((e: unknown) => {
     if (e instanceof ApiError && e.status === 401) {
@@ -182,7 +183,15 @@ export function BackupScreen() {
         <Button
           variant="ghost"
           title="Sign out"
-          onPress={() => leaveApp(vault).catch(() => setMsg('Could not sign out. Try again.'))}
+          disabled={leaving}
+          onPress={() => {
+            if (leaving) return;
+            setLeaving(true);
+            leaveApp(vault).catch(() => {
+              setLeaving(false);
+              setMsg('Could not sign out. Try again.');
+            });
+          }}
         />
       )}
       {backups.length > 0 && <Text style={[ui.groupTitle, { color: c.muted }]}>Your backups</Text>}
