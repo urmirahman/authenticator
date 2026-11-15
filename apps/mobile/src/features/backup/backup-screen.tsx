@@ -1,3 +1,4 @@
+import { ApiError } from '@repo/api-client';
 import { dedupe } from '@repo/importers';
 import type { BackupMeta } from '@repo/types';
 import {
@@ -18,10 +19,13 @@ import {
   Input,
   Label,
   Muted,
+  Notice,
   Screen,
   Section,
   styles as ui,
 } from '@/components/ui';
+import { leaveApp } from '@/features/session/leave-app';
+import { session } from '@/features/session/session';
 import { useVault } from '@/features/vault/vault-store';
 import { api } from '@/lib/api';
 
@@ -42,11 +46,31 @@ export function BackupScreen() {
   const [restoreId, setRestoreId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [offline, setOffline] = useState<boolean | null>(null);
+  const [needsReauth, setNeedsReauth] = useState(false);
 
-  const load = useCallback(() => api.backups.list().then(setBackups, () => undefined), []);
+  const noteAuthFailure = useCallback((e: unknown) => {
+    if (e instanceof ApiError && e.status === 401) {
+      setNeedsReauth(true);
+      setMsg('Session expired. Sign out and sign in again.');
+      return true;
+    }
+    return false;
+  }, []);
+
+  const load = useCallback(
+    () =>
+      api.backups.list().then(setBackups, (e: unknown) => {
+        noteAuthFailure(e);
+      }),
+    [noteAuthFailure],
+  );
   useEffect(() => {
-    load();
-  }, [load]);
+    session.isOffline().then(setOffline);
+  }, []);
+  useEffect(() => {
+    if (offline === false) load();
+  }, [offline, load]);
 
   const run = async (fn: () => Promise<string>) => {
     setBusy(true);
@@ -55,7 +79,7 @@ export function BackupScreen() {
     try {
       setMsg(await fn());
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Failed');
+      if (!noteAuthFailure(e)) setMsg(e instanceof Error ? e.message : 'Failed');
     } finally {
       setBusy(false);
     }
@@ -86,26 +110,50 @@ export function BackupScreen() {
     run(async () => {
       const b = await api.backups.get(id);
       const accounts = await decryptBackup(password, { ...b, kdf: b.kdf as unknown as BackupKdf });
+      await vault.sync();
       const fresh = dedupe(
         vault.accounts.map((a) => toImported(a.data)),
         accounts,
       );
       for (const a of fresh) await vault.save('account', toAccountData(a));
-      return `Restored ${fresh.length}, skipped ${accounts.length - fresh.length} duplicate(s).`;
+      await vault.sync();
+      const skipped = accounts.length - fresh.length;
+      return `Existing accounts unchanged. Added ${fresh.length}. Skipped ${skipped} duplicate(s).`;
     });
   };
 
   const remove = (b: BackupMeta) =>
     Alert.alert(`Delete "${b.name}"?`, undefined, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => api.backups.remove(b.id).then(load) },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => api.backups.remove(b.id).then(load, noteAuthFailure),
+      },
     ]);
+
+  if (offline === null) {
+    return (
+      <Screen>
+        <ActivityIndicator color={c.accent} />
+      </Screen>
+    );
+  }
+
+  if (offline) {
+    return (
+      <Screen>
+        <Notice>Offline mode doesn’t need a backup.</Notice>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
       <Muted>
         Sealed on this phone with its own backup password. Even we can&apos;t open it, so keep that
-        password somewhere safe.
+        password somewhere safe. Restores add missing accounts; they don&apos;t replace what&apos;s
+        already in your vault.
       </Muted>
       <Section title={`New backup · ${vault.accounts.length} accounts`}>
         <Label>Name (optional)</Label>
@@ -130,6 +178,13 @@ export function BackupScreen() {
       </Section>
       {busy && <ActivityIndicator color={c.accent} />}
       {msg && <Text style={{ color: c.text }}>{msg}</Text>}
+      {needsReauth && (
+        <Button
+          variant="ghost"
+          title="Sign out"
+          onPress={() => leaveApp(vault).catch(() => setMsg('Could not sign out. Try again.'))}
+        />
+      )}
       {backups.length > 0 && <Text style={[ui.groupTitle, { color: c.muted }]}>Your backups</Text>}
       {backups.map((b) => (
         <Card key={b.id} style={{ gap: 10 }}>

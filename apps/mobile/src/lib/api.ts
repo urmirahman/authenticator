@@ -32,6 +32,18 @@ async function refreshTokens(): Promise<boolean> {
   return refreshing;
 }
 
+/**
+ * SecureStore can hold a refresh token after the short-lived access token is gone.
+ * Mint a new access token before the request so the first call is not sent unsigned.
+ */
+async function ensureAccessToken(): Promise<string | null> {
+  const existing = await session.accessToken();
+  if (existing) return existing;
+  if (!(await session.refreshToken())) return null;
+  if (!(await refreshTokens())) return null;
+  return session.accessToken();
+}
+
 const fetchWithRefresh: typeof fetch = async (input, init) => {
   const res = await fetch(input, init);
   if (res.status !== 401 || String(input).includes('/v1/auth/')) return res;
@@ -43,7 +55,7 @@ const fetchWithRefresh: typeof fetch = async (input, init) => {
 
 export const api = createApiClient({
   baseUrl: API_URL,
-  getAccessToken: () => session.accessToken(),
+  getAccessToken: () => ensureAccessToken(),
   getDeviceId: () => session.deviceId(),
   fetch: fetchWithRefresh,
 });

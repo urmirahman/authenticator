@@ -166,6 +166,11 @@ describe('importAny + dedupe', () => {
   it('drops duplicates', () => {
     expect(dedupe([github], [github, { ...github, label: 'other' }])).toHaveLength(1);
   });
+
+  it('keeps a different secret when issuer and label match', () => {
+    const rotated = { ...github, secret: 'NBSWY3DPEHPK3PXP' };
+    expect(dedupe([github], [github, rotated])).toEqual([rotated]);
+  });
 });
 
 describe('issuer icons', () => {

@@ -29,6 +29,8 @@ import {
   loadBiometricKey,
   saveBiometricKey,
 } from '@/features/security/biometric-key';
+import { session } from '@/features/session/session';
+import { localVault } from './local-vault';
 
 /**
  * Mobile version of the web vault store. The crypto is shared (@repo/vault); only state handling
@@ -134,6 +136,14 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async () => {
     const currentGeneration = generation.current;
+    if (await session.isOffline()) {
+      const local = await localVault.loadLocalEnvelope();
+      if (generation.current !== currentGeneration) return;
+      vault.current = local;
+      setStatus(vault.current ? (key.current ? 'unlocked' : 'locked') : 'needs-setup');
+      await refreshBiometric();
+      return;
+    }
     const vaults = await api.vaults.list();
     if (generation.current !== currentGeneration) return;
     vault.current = vaults[0] ?? null;
@@ -142,6 +152,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, [refreshBiometric]);
 
   const sync = useCallback(async () => {
+    if (await session.isOffline()) return;
     const v = vault.current;
     if (!v || !key.current) return;
     const currentGeneration = generation.current;
@@ -171,7 +182,12 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       salt,
       ...MOBILE_KDF,
     });
-    vault.current = await api.vaults.create({ name: 'Personal', ...envelope });
+    if (await session.isOffline()) {
+      vault.current = await localVault.saveLocalEnvelope(envelope);
+      await localVault.saveLocalItems([]);
+    } else {
+      vault.current = await api.vaults.create({ name: 'Personal', ...envelope });
+    }
     key.current = vaultKey;
     setStatus('unlocked');
   }, []);
@@ -183,9 +199,14 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       cursor.current = '';
       setItems(new Map());
       setStatus('unlocked');
-      await sync();
+      if (await session.isOffline()) {
+        const localItems = await localVault.loadLocalItems();
+        apply(localItems);
+      } else {
+        await sync();
+      }
     },
-    [sync],
+    [apply, sync],
   );
 
   const unlockWithBiometric = useCallback(async () => {
@@ -222,10 +243,12 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       if (!v) throw new Error('No vault');
       const k = await unlockEnvelope(current, v);
       const salt = crypto.getRandomValues(new Uint8Array(16));
-      vault.current = await api.vaults.rekey(
-        v.id,
-        await wrapVaultKey(k, next, { algorithm: 'argon2id', salt, ...MOBILE_KDF }),
-      );
+      const wrapped = await wrapVaultKey(k, next, { algorithm: 'argon2id', salt, ...MOBILE_KDF });
+      if (await session.isOffline()) {
+        vault.current = await localVault.saveLocalEnvelope(wrapped);
+      } else {
+        vault.current = await api.vaults.rekey(v.id, wrapped);
+      }
       await clearBiometricKey();
       await refreshBiometric();
     },
@@ -260,6 +283,34 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const write = useCallback(
     async (id: string, kind: VaultItemKind, data: ItemData | null, version: number) => {
       const v = vault.current!;
+      if (await session.isOffline()) {
+        const currentItems = await localVault.loadLocalItems();
+        let nextItems: EncryptedVaultItem[];
+        if (data) {
+          const encrypted = encryptItem(key.current!, id, data);
+          const item: EncryptedVaultItem = {
+            id,
+            vaultId: v.id,
+            kind,
+            version,
+            ciphertext: encrypted.ciphertext,
+            nonce: encrypted.nonce,
+            deleted: false,
+            updatedAt: new Date().toISOString(),
+          };
+          const idx = currentItems.findIndex((it) => it.id === id);
+          if (idx >= 0) {
+            nextItems = [...currentItems];
+            nextItems[idx] = item;
+          } else {
+            nextItems = [...currentItems, item];
+          }
+        } else {
+          nextItems = currentItems.filter((it) => it.id !== id);
+        }
+        await localVault.saveLocalItems(nextItems);
+        return;
+      }
       try {
         if (data)
           await api.items.put(v.id, id, { kind, version, ...encryptItem(key.current!, id, data) });

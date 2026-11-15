@@ -1,7 +1,7 @@
 import type { Device, SignInMethods, User } from '@repo/types';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Prompt } from '@/components/prompt';
 import { useColors } from '@/components/theme';
 import {
@@ -16,10 +16,10 @@ import {
   Skeleton,
   type IconName,
 } from '@/components/ui';
-import { signOutGoogle } from '@/features/auth/google-sign-in';
-import { clearBiometricKey } from '@/features/security/biometric-key';
+import { leaveApp } from '@/features/session/leave-app';
+import { session } from '@/features/session/session';
 import { useVault } from '@/features/vault/vault-store';
-import { api, signOut } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useHaptics } from '@/lib/motion';
 import { monthYear, timeAgo } from '@/lib/time';
 
@@ -40,9 +40,33 @@ export function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
     try {
+      const offline = await session.isOffline();
+      setIsOffline(offline);
+      if (offline) {
+        const lp = await session.getLocalProfile();
+        setUser({
+          id: lp?.id || 'local-user',
+          email: 'Stored locally on this device',
+          displayName: lp?.displayName || 'Anonymous Vault',
+          createdAt: new Date(lp?.createdAt || Date.now()).toISOString(),
+        });
+        setDevices([
+          {
+            id: 'local',
+            name: 'This device',
+            platform: Platform.OS === 'ios' ? 'ios' : 'android',
+            publicKey: '',
+            lastSeenAt: new Date().toISOString(),
+          },
+        ]);
+        setMethods({ providers: [], passkeys: 0 });
+        setError(null);
+        return;
+      }
       const [u, m, d] = await Promise.all([
         api.users.me(),
         api.users.signInMethods(),
@@ -70,11 +94,7 @@ export function ProfileScreen() {
   const confirmSignOut = () => setSignOutOpen(true);
   const doSignOut = async () => {
     setSignOutOpen(false);
-    vault.lock();
-    await clearBiometricKey(); // a new sign-in must opt in again
-    await signOutGoogle();
-    await signOut();
-    router.replace('/sign-in');
+    await leaveApp(vault);
   };
 
   const name = user?.displayName || user?.email.split('@')[0] || '';
@@ -124,42 +144,64 @@ export function ProfileScreen() {
           <Stat label="Devices" value={devices ? String(devices.length) : '–'} />
         </View>
 
-        <Group title="Signing in" footer="Link more sign-in methods from the web app.">
-          {PROVIDERS.map((p) => {
-            const l = linked(p.id);
-            return (
-              <Row
-                key={p.id}
-                icon={p.icon}
-                label={p.label}
-                hint={l?.email}
-                value={methods ? (l ? 'Linked' : 'Not linked') : '…'}
-              />
-            );
-          })}
-          <Row
-            icon="finger-print"
-            label="Passkeys"
-            value={
-              methods ? (methods.passkeys === 0 ? 'None yet' : `${methods.passkeys} saved`) : '…'
-            }
-            last
-          />
-        </Group>
+        {isOffline ? (
+          <Group title="Storage & Privacy">
+            <Row
+              icon="shield-checkmark-outline"
+              label="Offline Vault"
+              hint="Data stored on device only"
+              value="Private"
+            />
+            <Row
+              icon="log-in-outline"
+              label="Switch to cloud sync"
+              hint="Sign in to sync across devices"
+              onPress={confirmSignOut}
+              last
+            />
+          </Group>
+        ) : (
+          <Group title="Signing in" footer="Link more sign-in methods from the web app.">
+            {PROVIDERS.map((p) => {
+              const l = linked(p.id);
+              return (
+                <Row
+                  key={p.id}
+                  icon={p.icon}
+                  label={p.label}
+                  hint={l?.email}
+                  value={methods ? (l ? 'Linked' : 'Not linked') : '…'}
+                />
+              );
+            })}
+            <Row
+              icon="finger-print"
+              label="Passkeys"
+              value={
+                methods ? (methods.passkeys === 0 ? 'None yet' : `${methods.passkeys} saved`) : '…'
+              }
+              last
+            />
+          </Group>
+        )}
 
         <Group title="Your vault">
-          <Row icon="sync" label="Last synced" value={timeAgo(vault.lastSyncedAt)} />
-          <Row
-            icon="phone-portrait-outline"
-            label="Devices"
-            hint="See where you're signed in"
-            onPress={() => router.push('/devices')}
-          />
-          <Row
-            icon="time-outline"
-            label="Recent activity"
-            onPress={() => router.push('/activity')}
-          />
+          {!isOffline && (
+            <>
+              <Row icon="sync" label="Last synced" value={timeAgo(vault.lastSyncedAt)} />
+              <Row
+                icon="phone-portrait-outline"
+                label="Devices"
+                hint="See where you're signed in"
+                onPress={() => router.push('/devices')}
+              />
+              <Row
+                icon="time-outline"
+                label="Recent activity"
+                onPress={() => router.push('/activity')}
+              />
+            </>
+          )}
           <Row
             icon="cloud-upload-outline"
             label="Encrypted backups"
@@ -170,7 +212,13 @@ export function ProfileScreen() {
 
         <Group>
           <Row icon="create-outline" label="Edit display name" onPress={() => setEditing(true)} />
-          <Row icon="log-out-outline" label="Sign out" destructive onPress={confirmSignOut} last />
+          <Row
+            icon="log-out-outline"
+            label={isOffline ? 'Leave offline mode' : 'Sign out'}
+            destructive
+            onPress={confirmSignOut}
+            last
+          />
         </Group>
 
         <Prompt
@@ -181,6 +229,19 @@ export function ProfileScreen() {
           onSubmit={async (displayName) => {
             if (!displayName.trim()) return;
             try {
+              if (isOffline) {
+                const lp = (await session.getLocalProfile()) || {
+                  id: 'local-user',
+                  displayName: '',
+                  createdAt: Date.now(),
+                };
+                lp.displayName = displayName.trim();
+                await session.setLocalProfile(lp);
+                setUser((prev) => (prev ? { ...prev, displayName: lp.displayName } : null));
+                haptic('success');
+                setEditing(false);
+                return;
+              }
               setUser(await api.users.update(displayName.trim()));
               haptic('success');
             } catch (e) {

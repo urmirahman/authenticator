@@ -14,6 +14,8 @@ import {
 import { useLogoMark } from '@/components/brand-images';
 import { useColors } from '@/components/theme';
 import { Button, FadeIn, IconBubble, Input, Label, styles as ui } from '@/components/ui';
+import { leaveApp } from '@/features/session/leave-app';
+import { session } from '@/features/session/session';
 import { useHaptics } from '@/lib/motion';
 import { useVault } from './vault-store';
 
@@ -36,7 +38,15 @@ const INTRO = [
 ];
 
 /** First-run explainer shown before creating the master password. */
-function Onboarding({ onDone }: { onDone: () => void }) {
+function Onboarding({
+  onDone,
+  onLeave,
+  leaveLabel,
+}: {
+  onDone: () => void;
+  onLeave: () => void;
+  leaveLabel: string;
+}) {
   const c = useColors();
   const mark = useLogoMark();
   const [step, setStep] = useState(0);
@@ -76,6 +86,7 @@ function Onboarding({ onDone }: { onDone: () => void }) {
           onPress={() => (last ? onDone() : setStep(step + 1))}
         />
         {step > 0 && <Button variant="ghost" title="Back" onPress={() => setStep(step - 1)} />}
+        <Button variant="ghost" title={leaveLabel} onPress={onLeave} />
       </View>
     </View>
   );
@@ -94,7 +105,21 @@ export function UnlockScreen() {
   const [error, setError] = useState<string | null>(null);
   const [introDone, setIntroDone] = useState(false);
   const [ack, setAck] = useState(false);
+  const [offline, setOffline] = useState(false);
   const strength = strengthOf(password);
+  const leaveLabel = offline
+    ? 'Leave offline mode'
+    : isSetup
+      ? 'Use a different account'
+      : 'Sign out';
+
+  useEffect(() => {
+    session.isOffline().then(setOffline);
+  }, []);
+
+  const leave = () => {
+    leaveApp(vault).catch(() => setError('Could not sign out. Try again.'));
+  };
 
   const tryBiometric = async () => {
     setError(null);
@@ -132,7 +157,8 @@ export function UnlockScreen() {
     }
   };
 
-  if (isSetup && !introDone) return <Onboarding onDone={() => setIntroDone(true)} />;
+  if (isSetup && !introDone)
+    return <Onboarding onDone={() => setIntroDone(true)} onLeave={leave} leaveLabel={leaveLabel} />;
 
   return (
     <KeyboardAvoidingView
@@ -232,6 +258,7 @@ export function UnlockScreen() {
               onPress={tryBiometric}
             />
           )}
+          <Button variant="ghost" title={leaveLabel} onPress={leave} disabled={busy} />
           {error && (
             <Text style={[ui.error, { textAlign: 'center' }]} accessibilityLiveRegion="polite">
               {error}

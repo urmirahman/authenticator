@@ -5,6 +5,8 @@ import { ActivityIndicator, Alert, Text, View } from 'react-native';
 import { Button, Card, Input, Label, Muted, styles as ui } from '@/components/ui';
 import { signOutGoogle } from '@/features/auth/google-sign-in';
 import { clearBiometricKey } from '@/features/security/biometric-key';
+import { session } from '@/features/session/session';
+import { localVault } from '@/features/vault/local-vault';
 import { useVault } from '@/features/vault/vault-store';
 import { api, signOut } from '@/lib/api';
 
@@ -32,6 +34,14 @@ export function DeleteAccount() {
     setBusy(true);
     try {
       if (!(await vault.verifyPassword(password))) throw new Error('Wrong master password.');
+      if (await session.isOffline()) {
+        await localVault.clearLocalVault();
+        await session.clear();
+        vault.reset();
+        router.replace('/sign-in');
+        Alert.alert('Vault deleted', 'Your local vault and all data on this device were removed.');
+        return;
+      }
       await api.users.deleteAccount('DELETE');
       await leave();
       Alert.alert('Account deleted', 'Your account and encrypted vault were removed.');

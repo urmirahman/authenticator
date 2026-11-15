@@ -16,6 +16,7 @@ import { useVault } from '@/features/vault/vault-store';
 import { Button, Card, FadeIn, Input, Label, Notice, styles as ui } from '@/components/ui';
 import { openWebPage } from '@/lib/web-url';
 import { api, completeSignIn, DEV_AUTH } from '@/lib/api';
+import { generateAnonymousProfile, session } from '@/features/session/session';
 import { googleSignInConfigured, signInWithGoogle } from './google-sign-in';
 
 /**
@@ -65,6 +66,24 @@ export function SignInScreen() {
     }
   };
 
+  const continueOffline = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const existingProfile = await session.getLocalProfile();
+      if (!existingProfile) {
+        await session.setLocalProfile(generateAnonymousProfile());
+      }
+      await session.setOffline(true);
+      vault.reset();
+      router.replace('/codes');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not start offline mode');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -85,6 +104,13 @@ export function SignInScreen() {
             icon="logo-google"
             title={busy ? 'Signing in…' : 'Continue with Google'}
             onPress={google}
+            disabled={busy}
+          />
+          <Button
+            variant="ghost"
+            icon="lock-closed-outline"
+            title="Use offline (no account)"
+            onPress={continueOffline}
             disabled={busy}
           />
           {DEV_AUTH && (

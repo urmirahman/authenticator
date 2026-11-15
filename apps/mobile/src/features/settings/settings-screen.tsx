@@ -26,6 +26,7 @@ import {
   SwitchRow,
 } from '@/components/ui';
 import { useVault } from '@/features/vault/vault-store';
+import { session } from '@/features/session/session';
 import { api } from '@/lib/api';
 import { useHaptics } from '@/lib/motion';
 import { openWebPage } from '@/lib/web-url';
@@ -96,7 +97,18 @@ export function SettingsScreen() {
   /** "Download my data": write the JSON to a temp file and open the share sheet. */
   const exportData = async () => {
     try {
-      const data = await api.users.exportData();
+      let data: unknown;
+      if (await session.isOffline()) {
+        const lp = await session.getLocalProfile();
+        data = {
+          exportedAt: new Date().toISOString(),
+          user: { displayName: lp?.displayName || 'Anonymous Vault' },
+          accounts: vault.accounts.map((a) => a.data),
+          folders: vault.folders.map((f) => f.data),
+        };
+      } else {
+        data = await api.users.exportData();
+      }
       const file = new File(Paths.cache, 'bloom-export.json');
       file.write(JSON.stringify(data, null, 2));
       await Sharing.shareAsync(file.uri, { mimeType: 'application/json' });

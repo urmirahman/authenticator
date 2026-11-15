@@ -68,14 +68,16 @@ export function BackupScreen() {
     run(async () => {
       const b = await api.backups.get(restoreId!);
       const accounts = await decryptBackup(pw, { ...b, kdf: b.kdf as unknown as BackupKdf });
-      // Skip anything already in the vault (same secret + issuer + label).
+      await vault.sync();
       const fresh = dedupe(
         vault.accounts.map((a) => toImported(a.data)),
         accounts,
       );
       for (const a of fresh) await vault.save('account', toAccountData(a));
+      await vault.sync();
       setRestoreId(null);
-      return `Restored ${fresh.length} account(s), skipped ${accounts.length - fresh.length} duplicate(s).`;
+      const skipped = accounts.length - fresh.length;
+      return `Existing accounts unchanged. Added ${fresh.length}. Skipped ${skipped} duplicate(s).`;
     });
   };
 
@@ -98,7 +100,8 @@ export function BackupScreen() {
       <PageTitle>Encrypted backups</PageTitle>
       <p className="text-sm text-muted">
         Backups are encrypted in this browser with a separate backup password. We cannot open them
-        or reset that password.
+        or reset that password. Restores add missing accounts; they don&apos;t replace what&apos;s
+        already in your vault.
       </p>
 
       <form onSubmit={create} className="space-y-3 rounded-2xl bg-surface p-5 ring-1 ring-line">
