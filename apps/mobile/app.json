@@ -4,13 +4,13 @@
     "slug": "authenticator",
     "owner": "rahmanurmi",
     "scheme": ["authenticator", "exp+authenticator"],
-    "version": "0.1.2",
+    "version": "0.1.3",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "dev.urmirahman.authenticator",
-      "buildNumber": "2",
+      "buildNumber": "10",
       "supportsTablet": true,
       "infoPlist": {
         "CFBundleDisplayName": "Bloom"
@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "dev.urmirahman.authenticator",
-      "versionCode": 9,
+      "versionCode": 10,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
