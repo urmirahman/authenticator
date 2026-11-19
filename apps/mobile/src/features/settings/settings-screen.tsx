@@ -340,7 +340,6 @@ export function SettingsScreen() {
 
       <Group title="Your data">
         <Row icon="swap-horizontal-outline" label="Import" onPress={() => router.push('/import')} />
-        <Row icon="cloud-upload-outline" label="Backups" onPress={() => router.push('/backups')} />
         <Row icon="qr-code-outline" label="Transfer" onPress={() => router.push('/transfer')} />
         <Row
           icon="sync-outline"

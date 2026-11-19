@@ -34,7 +34,7 @@ export function ProfileScreen() {
   const vault = useVault();
   const haptic = useHaptics();
   const [user, setUser] = useState<User | null>(null);
-  const [methods, setMethods] = useState<SignInMethods | null>(null);
+  const [providers, setProviders] = useState<SignInMethods['providers'] | null>(null);
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -63,7 +63,7 @@ export function ProfileScreen() {
             lastSeenAt: new Date().toISOString(),
           },
         ]);
-        setMethods({ providers: [], passkeys: 0 });
+        setProviders([]);
         setError(null);
         return;
       }
@@ -73,7 +73,7 @@ export function ProfileScreen() {
         api.devices.list(),
       ]);
       setUser(u);
-      setMethods(m);
+      setProviders(m.providers);
       setDevices(d);
       setError(null);
     } catch (e) {
@@ -98,7 +98,7 @@ export function ProfileScreen() {
   };
 
   const name = user?.displayName || user?.email.split('@')[0] || '';
-  const linked = (id: string) => methods?.providers.find((p) => p.provider === id);
+  const linked = (id: string) => providers?.find((p) => p.provider === id);
 
   return (
     <>
@@ -175,7 +175,7 @@ export function ProfileScreen() {
                   icon={p.icon}
                   label={p.label}
                   hint={l?.email}
-                  value={methods ? (l ? 'Linked' : 'Not linked') : '…'}
+                  value={providers ? (l ? 'Linked' : 'Not linked') : '…'}
                   last
                 />
               );

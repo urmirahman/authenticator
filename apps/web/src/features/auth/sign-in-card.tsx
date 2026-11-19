@@ -1,37 +1,12 @@
 'use client';
 
-import { friendlyPasskeyError, type FriendlyError } from '@repo/vault/passkey-errors';
-
 import type { OAuthProvider } from '@repo/types';
 import { Button } from '@repo/ui/button';
 import { Card } from '@repo/ui/card';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import { Field, inputClass, Notice } from '@/components/ui';
+import { Field, inputClass } from '@/components/ui';
 import { api, completeSignIn, DEV_AUTH } from '@/lib/api';
-import { signInWithPasskey } from './passkey';
-
-/** Small key icon for the passkey button (inherits the button's text colour). */
-function KeyIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="7.5" cy="15.5" r="4.5" />
-      <path d="M10.7 12.3 21 2" />
-      <path d="m16 7 3 3" />
-      <path d="m19 4 2 2" />
-    </svg>
-  );
-}
 
 /** Official multicolour Google "G" mark (brand guidelines: keep its colours). */
 function GoogleIcon() {
@@ -69,20 +44,12 @@ const PROVIDERS: Array<{ id: OAuthProvider; label: string }> = [
 export function SignInCard() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<FriendlyError | null>(null);
 
   const startOAuth = (provider: OAuthProvider) => {
     window.location.href = api.auth.oauthStartUrl(
       provider,
       `${window.location.origin}/auth/callback`,
     );
-  };
-
-  const passkey = () => {
-    setNotice(null);
-    signInWithPasskey()
-      .then(() => router.replace('/vault'))
-      .catch((e: unknown) => setNotice(friendlyPasskeyError(e, 'signin')));
   };
 
   const devLogin = (e: FormEvent<HTMLFormElement>) => {
@@ -101,15 +68,8 @@ export function SignInCard() {
       <p className="text-sm text-muted">
         Your codes are encrypted on this device before they sync.
       </p>
-      <Button onClick={passkey}>
-        <span className="inline-flex items-center justify-center gap-2">
-          <KeyIcon />
-          Sign in with a passkey
-        </span>
-      </Button>
-      <div className="py-1 text-center text-xs text-muted">or</div>
       {PROVIDERS.map((p) => (
-        <Button key={p.id} variant="secondary" onClick={() => startOAuth(p.id)}>
+        <Button key={p.id} onClick={() => startOAuth(p.id)}>
           <span className="inline-flex items-center justify-center gap-2">
             {p.id === 'google' && <GoogleIcon />}
             {p.label}
@@ -129,11 +89,6 @@ export function SignInCard() {
           </Field>
           <Button variant="ghost">Dev sign in</Button>
         </form>
-      )}
-      {notice && (
-        <Notice tone={notice.tone} onDismiss={() => setNotice(null)}>
-          {notice.message}
-        </Notice>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}
     </Card>

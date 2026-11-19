@@ -52,7 +52,7 @@ export default function RecoveryKitPage() {
             </tr>
             <tr>
               <th className="py-2 text-left">Signed in with</th>
-              <td>Google or passkey (the one you used)</td>
+              <td>Google</td>
             </tr>
           </tbody>
         </table>
