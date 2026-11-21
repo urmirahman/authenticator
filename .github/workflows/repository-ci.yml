@@ -1,0 +1,51 @@
+name: Repository CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  payment-policy:
+    name: Payment integration detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Scan tracked files for payment integrations
+        shell: bash
+        run: |
+          pattern='(^|[^[:alnum:]_])(stripe|@stripe/[^"[:space:]]+|paypal-rest-sdk|@paypal/[^"[:space:]]+|@paddle/[^"[:space:]]+|braintree|razorpay|@revenuecat/[^"[:space:]]+|react-native-purchases|react-native-iap|expo-in-app-purchases)([^[:alnum:]_]|$)|api[.]stripe[.]com|checkout[.]stripe[.]com|api(-m)?[.]paypal[.]com|api[.]razorpay[.]com|api[.]paddle[.]com|STRIPE_(SECRET|API|PUBLISHABLE)_KEY|BillingClient|Product[.]purchase[(]|checkout[.]sessions[.]create|subscriptions[.]create|createCheckoutSession|createPaymentIntent|paidFeature|subscriptionRequired'
+          status=0
+          git grep -I -l -E -i -e "$pattern" -- . \
+            ':(exclude)PAYMENT_POLICY.md' \
+            ':(exclude).github/workflows/repository-ci.yml' || status=$?
+          case "$status" in
+            0) echo "::error::Possible payment integration found in the files listed above."; exit 1 ;;
+            1) echo "No known payment integration signals found." ;;
+            *) exit "$status" ;;
+          esac
+
+  workspace:
+    name: Workspace CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HUSKY: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --global pnpm@11.5.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check-types
+      - run: pnpm -F @authenticator/web test
