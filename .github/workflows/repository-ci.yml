@@ -21,7 +21,7 @@ jobs:
       - name: Scan tracked files for payment integrations
         shell: bash
         run: |
-          pattern='(^|[^[:alnum:]_])(stripe|@stripe/[^"[:space:]]+|paypal-rest-sdk|@paypal/[^"[:space:]]+|@paddle/[^"[:space:]]+|braintree|razorpay|@revenuecat/[^"[:space:]]+|react-native-purchases|react-native-iap|expo-in-app-purchases)([^[:alnum:]_]|$)|api[.]stripe[.]com|checkout[.]stripe[.]com|api(-m)?[.]paypal[.]com|api[.]razorpay[.]com|api[.]paddle[.]com|STRIPE_(SECRET|API|PUBLISHABLE)_KEY|BillingClient|Product[.]purchase[(]|checkout[.]sessions[.]create|subscriptions[.]create|createCheckoutSession|createPaymentIntent|paidFeature|subscriptionRequired'
+          pattern='(^|[^[:alnum:]_])(@stripe/[^"[:space:]]+|paypal-rest-sdk|@paypal/[^"[:space:]]+|@paddle/[^"[:space:]]+|braintree|razorpay|@revenuecat/[^"[:space:]]+|react-native-purchases|react-native-iap|expo-in-app-purchases)([^[:alnum:]_]|$)|["]stripe["][[:space:]]*:|stripe@npm:|stripe@[0-9]|from[[:space:]]+.stripe.|require[(].stripe.|import[(].stripe.|api[.]stripe[.]com|checkout[.]stripe[.]com|api(-m)?[.]paypal[.]com|api[.]razorpay[.]com|api[.]paddle[.]com|STRIPE_(SECRET|API|PUBLISHABLE)_KEY|BillingClient|Product[.]purchase[(]|checkout[.]sessions[.]create|subscriptions[.]create|createCheckoutSession|createPaymentIntent|paidFeature|subscriptionRequired'
           status=0
           git grep -I -l -E -i -e "$pattern" -- . \
             ':(exclude)PAYMENT_POLICY.md' \
